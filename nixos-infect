@@ -1,5 +1,5 @@
 #! /usr/bin/env bash
-set -ex
+set -e
 
 makeConf() {
 # XXX NB remember to escape / $ ` in heredocs!
@@ -62,33 +62,20 @@ makeSwap() {
   fi
 }
 
-bindSubs() {
-  for dir in dev proc run sys; do
-    mkdir $1/$dir
-    mount -R {,$1}/$dir
-  done
-}
-
 makeConf
-makeSwap
+makeSwap # TODO check if actually needed? seem to recall smallest size would die.
 
 apt-get install -y curl sudo rsync
 
 groupadd -r nixbld
 seq 1 10 | xargs -I{} useradd -c "Nix build user {}" -d /var/empty -g nixbld -G nixbld -M -N -r -s `which nologin` nixbld{}
 
-# XXX force version 1.10 because 1.11 insists on nixexprs.tar.xz which is unavailable for older releases
-#curl https://nixos.org/nix/install | sed -r 's|nix-([0-9.]+)|nix-1.10|g' | sh
 curl https://nixos.org/nix/install | sh
 
 source ~/.nix-profile/etc/profile.d/nix.sh
 
 nix-channel --add https://nixos.org/channels/nixos-unstable nixos
 nix-channel --update
-
-# XXX BUG encountered in latest unstable (no permission /bin/bash nonsense)
-#nix-channel --add https://nixos.org/channels/nixos-15.09 nixpkgs
-#nix-channel --update
 
 newRootImg=`mktemp`
 newRootMount=`mktemp -d`
@@ -100,6 +87,8 @@ nix-env -i -f /nix/var/nix/profiles/per-user/root/channels/nixpkgs/nixos \
   -A config.system.build.nixos-option                                    \
   -A config.system.build.nixos-generate-config
 
+# XXX GOTCHA NB bindmount causes /bin/bash permission BUG on many
+# versions (nix 1.10-1.11, nixpkgs 15-16), so we must use loopback image instead.
 dd if=/dev/zero of=$newRootImg bs=1M count=$((1024*2))
 mkfs.ext4 $newRootImg
 mount $newRootImg $newRootMount
@@ -107,14 +96,11 @@ mount $newRootImg $newRootMount
 rsync -aR /./etc/nixos $newRootMount
 nixos-install --root $newRootMount
 
-swapoff /swap || true
+swapoff /swap
 mount -B / $oldRootMount
-# XXX bindmount causes /bin/bash permission BUG on many versions (nix 1.10-1.11, nixpkgs 15-16), so just use loopback img for now
-#mount -B $newRoot $newRootMount
-#bindSubs $newRootMount
 rsync -a --delete --exclude=$(dirname $newRootMount) $newRootMount/ $oldRootMount
 
-# restore access to commands (not sure whih of these 3 are essential, nor if order matters XXX)
+# restore access to commands (TODO not sure whih of these 3 are essential, nor if order matters XXX)
 export PATH=/nix/var/nix/profiles/system/sw/bin:/nix/var/nix/profiles/system/sw/sbin
 /nix/var/nix/profiles/system/activate
 source /nix/var/nix/profiles/system/etc/profile
@@ -155,6 +141,3 @@ nixos-rebuild boot --install-grub
 
 sync
 reboot -f
-
-#echo s > /proc/sysrq-trigger # sync
-#echo b > /proc/sysrq-trigger # reboot -f better if i fix PATH?
