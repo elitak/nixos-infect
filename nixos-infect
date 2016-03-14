@@ -1,56 +1,83 @@
 #! /usr/bin/env bash
-set -e
+
+# WARNING NB This script wipes out the targeted host's root filesystem when it
+# runs to completion. Any errors halt execution. set -x is used to help debug,
+# as often a failed run leaves the system in an inconsistent state, requiring a
+# rebuild (in DigitalOcean panel: Droplet Settings -> "Destroy" -> "Rebuild
+# from original").
+#
+# TO USE:
+#  - Add any custom config you want (see notes below)
+#  - Deploy a Debian 8.3 x64 droplet (enable ipv6; add your ssh key)
+#  - cat customConfig.optional nixos-infect | ssh root@targethost bash
+#
+# This was last tested with the DigitalOcean Debian 8.3 x64 image.  Different
+# versions as well as the Ubuntu images should work as well, but then, there's
+# not much point in selecting something different if you intend to wipe out the
+# fs as this does. You may need to make minor modifications to use in other
+# templates, but basically all that will ever need tweaking should be:
+#  /etc/nixos/{,hardware-}configuration.nix, inline in this file
+#  /etc/nixso/networking.nix, generated at runtime (no ipv6? different number of adapters?)
+#
+# Motivation: nixos-assimilate should supplant this script entirely, if it's
+# ever completed. nixos-in-place was quite broken when I tried it, and also
+# took a pretty janky approach that was substantially more complex than this
+# (although it supported more platforms): it didn't install to root (/nixos
+# instead), left dregs of the old filesystem (almost always unnecessary since
+# starting from a fresh deployment), and most importantly, simply didn't work for
+# me! (old system was being because grub wasnt properly reinstalled)
+
+set -ex
 
 makeConf() {
-# XXX NB remember to escape / $ ` in heredocs!
-# TODO use appended archive or some curl-able tarball?
-mkdir -p /etc/nixos/shared
-cat > /etc/nixos/networking.nix <<EOF
+  # NB remember to escape / $ ` in heredocs!
+  # TODO use appended archive or some curl-able tarball?
+  mkdir -p /etc/nixos
+  cat > /etc/nixos/networking.nix << EOF
 # This file will be populated at runtime with the
 # networking details gathered from the active system.
 {...}:{}
 EOF
-cat > /etc/nixos/configuration.nix <<EOF
+  cat > /etc/nixos/configuration.nix << EOF
 { config, pkgs, ... }: {
   imports = [
     ./hardware-configuration.nix
     ./networking.nix
-    #./shared/essentials.nix
-    #./shared/user-settings.nix
   ];
 
-  networking.hostName = "$(hostname)";
   time.timeZone = "America/Los_Angeles";
   boot.cleanTmpDir = true;
 
-  services.openssh.enable = true;
   services.tlsdated.enable = true;
-  #services.tlsdated.extraOptions = ""; # BUG fixed in unstable
-
+  services.openssh.enable = true;
   networking.firewall.allowPing = true;
+  networking.hostName = "$(hostname)";
+  users.users.root.openssh.authorizedKeys.keys = [ ''
+    $(cat /root/.ssh/authorized_keys | head -n1)
+  '' ];
 }
 EOF
-# (nixos-generate-config will add qemu-user and bind-mounts, so avoid)
-cat > /etc/nixos/hardware-configuration.nix <<EOF
+  # (nixos-generate-config will add qemu-user and bind-mounts, so avoid)
+  cat > /etc/nixos/hardware-configuration.nix << EOF
 { config, lib, pkgs, ... }: {
   imports = [ <nixpkgs/nixos/modules/profiles/qemu-guest.nix> ];
   boot.loader.grub.devices = [ "/dev/vda" ];
   fileSystems."/" = { device = "/dev/vda1"; fsType = "ext4"; };
 }
 EOF
-#! /usr/bin/env bash
-# NB put your semi-sensitive (not posted to github) configuration in a separate
-# file and include it via this customConfig() function. e.g.:
-#  customConfig() {
-#    cat > /etc/nixos/custom.nix << EOF
-#    { config, lib, pkgs, ... }: {
-#    }
-#    EOF
-#  }
-#
-# then you can add the files in configuration.nix's imports above and run something like:
-#   cat customConfig nixos-infect | root@targethost bash
-if [[ `type -t customConfig` == "function" ]]; then customConfig; fi
+  #! /usr/bin/env bash
+  # NB put your semi-sensitive (not posted to github) configuration in a separate
+  # file and include it via this customConfig() function. e.g.:
+  #  customConfig() {
+  #    cat > /etc/nixos/custom.nix << EOF
+  #    { config, lib, pkgs, ... }: {
+  #    }
+  #    EOF
+  #  }
+  #
+  # then you can add the files in configuration.nix's imports above and run something like:
+  #   cat customConfig nixos-infect | root@targethost bash
+  if [[ `type -t customConfig` == "function" ]]; then customConfig; fi
 }
 
 makeSwap() {
@@ -63,7 +90,7 @@ makeSwap() {
 }
 
 makeConf
-makeSwap # TODO check if actually needed? seem to recall smallest size would die.
+makeSwap # smallest (512MB) droplet needs extra memory!
 
 apt-get install -y curl sudo rsync
 
@@ -100,8 +127,7 @@ swapoff /swap
 mount -B / $oldRootMount
 rsync -a --delete --exclude=$(dirname $newRootMount) $newRootMount/ $oldRootMount
 
-# restore access to commands (TODO not sure whih of these 3 are essential, nor if order matters XXX)
-export PATH=/nix/var/nix/profiles/system/sw/bin:/nix/var/nix/profiles/system/sw/sbin
+# restore access to commands
 /nix/var/nix/profiles/system/activate
 source /nix/var/nix/profiles/system/etc/profile
 
@@ -115,7 +141,7 @@ gateway6=$(ip -6 route show dev eth0 | grep default | sed -r 's|default via ([0-
 ether0=$(ip address show dev eth0 | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|')
 ether1=$(ip address show dev eth1 | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|')
 
-cat > /etc/nixos/networking.nix <<EOF
+cat > /etc/nixos/networking.nix << EOF
 { config, pkgs, ... }: {
   networking = {
     nameservers = [ "8.8.4.4" ];
@@ -129,7 +155,7 @@ cat > /etc/nixos/networking.nix <<EOF
       eth1.useDHCP = false;
     };
   };
- services.udev.extraRules = ''
+  services.udev.extraRules = ''
     KERNEL=="eth*", ATTR{address}=="$ether0", NAME="eth0"
     KERNEL=="eth*", ATTR{address}=="$ether1", NAME="eth1"
   '';
@@ -140,4 +166,5 @@ EOF
 nixos-rebuild boot --install-grub
 
 sync
+echo "You may now Ctrl-C or otherwise terminate this process."
 reboot -f
