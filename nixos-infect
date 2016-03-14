@@ -11,21 +11,24 @@
 #  - Deploy a Debian 8.3 x64 droplet (enable ipv6; add your ssh key)
 #  - cat customConfig.optional nixos-infect | ssh root@targethost bash
 #
-# This was last tested with the DigitalOcean Debian 8.3 x64 image.  Different
-# versions as well as the Ubuntu images should work as well, but then, there's
-# not much point in selecting something different if you intend to wipe out the
-# fs as this does. You may need to make minor modifications to use in other
-# templates, but basically all that will ever need tweaking should be:
-#  /etc/nixos/{,hardware-}configuration.nix, inline in this file
-#  /etc/nixso/networking.nix, generated at runtime (no ipv6? different number of adapters?)
+# This was last tested with the DigitalOcean Debian 8.3 x64 and Ubuntu 15.10
+# x64 images. Different versions and archs (namely i386) should work as well,
+# but then, there's not much point in selecting something different if you
+# intend to wipe out the fs, as this script does. You may need to make minor
+# modifications to use in other templates, but basically all that will ever
+# need tweaking are already inlined in this file:
+#  /etc/nixos/{,hardware-}configuration.nix : rudimentary mostly static config
+#  /etc/nixos/networking.nix, networking settings determined at runtime
+#    tweak if no ipv6, different number of adapters, etc.
 #
-# Motivation: nixos-assimilate should supplant this script entirely, if it's
-# ever completed. nixos-in-place was quite broken when I tried it, and also
-# took a pretty janky approach that was substantially more complex than this
-# (although it supported more platforms): it didn't install to root (/nixos
-# instead), left dregs of the old filesystem (almost always unnecessary since
-# starting from a fresh deployment), and most importantly, simply didn't work for
-# me! (old system was being because grub wasnt properly reinstalled)
+# Motivation for this script: nixos-assimilate should supplant this script
+# entirely, if it's ever completed. nixos-in-place was quite broken when I
+# tried it, and also took a pretty janky approach that was substantially more
+# complex than this (although it supported more platforms): it didn't install
+# to root (/nixos instead), left dregs of the old filesystem (almost always
+# unnecessary since starting from a fresh deployment), and most importantly,
+# simply didn't work for me! (old system was being because grub wasnt properly
+# reinstalled)
 
 set -ex
 
@@ -33,33 +36,31 @@ makeConf() {
   # NB remember to escape / $ ` in heredocs!
   # TODO use appended archive or some curl-able tarball?
   mkdir -p /etc/nixos
+  IFS=$'\n'; keys=($(cat /root/.ssh/authorized_keys))
   cat > /etc/nixos/networking.nix << EOF
 # This file will be populated at runtime with the
 # networking details gathered from the active system.
 {...}:{}
 EOF
   cat > /etc/nixos/configuration.nix << EOF
-{ config, pkgs, ... }: {
+{ ... }: {
   imports = [
     ./hardware-configuration.nix
-    ./networking.nix
+    ./networking.nix # generated at runtime by nixos-infect
   ];
 
-  time.timeZone = "America/Los_Angeles";
   boot.cleanTmpDir = true;
-
-  services.tlsdated.enable = true;
-  services.openssh.enable = true;
-  networking.firewall.allowPing = true;
   networking.hostName = "$(hostname)";
-  users.users.root.openssh.authorizedKeys.keys = [ ''
-    $(cat /root/.ssh/authorized_keys | head -n1)
-  '' ];
+  networking.firewall.allowPing = true;
+  services.openssh.enable = true;
+  users.users.root.openssh.authorizedKeys.keys = [$(for key in ${keys[@]}; do echo -n "
+    \"$key\""; done)
+  ];
 }
 EOF
   # (nixos-generate-config will add qemu-user and bind-mounts, so avoid)
   cat > /etc/nixos/hardware-configuration.nix << EOF
-{ config, lib, pkgs, ... }: {
+{ ... }: {
   imports = [ <nixpkgs/nixos/modules/profiles/qemu-guest.nix> ];
   boot.loader.grub.devices = [ "/dev/vda" ];
   fileSystems."/" = { device = "/dev/vda1"; fsType = "ext4"; };
@@ -134,30 +135,36 @@ source /nix/var/nix/profiles/system/etc/profile
 # XXX temporary fix for name resolution
 echo nameserver 8.8.4.4 > /etc/resolv.conf
 
-ip4s=$(ip address show dev eth0 | grep 'inet '          | sed -r 's|.*inet ([0-9.]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|')
-ip6s=$(ip address show dev eth0 | grep 'inet6 .*global' | sed -r 's|.*inet6 ([0-9a-f:]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|')
-gateway=$(ip route show dev eth0 | grep default | sed -r 's|default via ([0-9.]+).*|\1|')
-gateway6=$(ip -6 route show dev eth0 | grep default | sed -r 's|default via ([0-9a-f:]+).*|\1|')
-ether0=$(ip address show dev eth0 | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|')
-ether1=$(ip address show dev eth1 | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|')
+IFS=$'\n'
+ip4s=($(ip address show dev eth0 | grep 'inet '          | sed -r 's|.*inet ([0-9.]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|'))
+ip6s=($(ip address show dev eth0 | grep 'inet6 .*global' | sed -r 's|.*inet6 ([0-9a-f:]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|'))
+gateway=($(ip route show dev eth0 | grep default | sed -r 's|default via ([0-9.]+).*|\1|'))
+gateway6=($(ip -6 route show dev eth0 | grep default | sed -r 's|default via ([0-9a-f:]+).*|\1|'))
+ether0=($(ip address show dev eth0 | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|'))
+ether1=($(ip address show dev eth1 | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|'))
 
 cat > /etc/nixos/networking.nix << EOF
-{ config, pkgs, ... }: {
+{ ... }: {
   networking = {
     nameservers = [ "8.8.4.4" ];
-    defaultGateway = "$gateway";
-    defaultGateway6 = "$gateway6";
+    defaultGateway = "${gateway}";
+    defaultGateway6 = "${gateway6}";
     interfaces = {
       eth0 = {
-        ip4 = [ $ip4s ];
-        ip6 = [ $ip6s ];
+        ip4 = [$(for a in ${ip4s[@]}; do echo -n "
+          $a"; done)
+        ];
+        ip6 = [$(for a in ${ip6s[@]}; do echo -n "
+          $a"; done)
+        ];
       };
+      # eth1 is for private networking or something?
       eth1.useDHCP = false;
     };
   };
   services.udev.extraRules = ''
-    KERNEL=="eth*", ATTR{address}=="$ether0", NAME="eth0"
-    KERNEL=="eth*", ATTR{address}=="$ether1", NAME="eth1"
+    KERNEL=="eth*", ATTR{address}=="${ether0}", NAME="eth0"
+    KERNEL=="eth*", ATTR{address}=="${ether1}", NAME="eth1"
   '';
 }
 EOF
