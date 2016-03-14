@@ -1,1 +1,160 @@
 #! /usr/bin/env bash
+set -ex
+
+makeConf() {
+# XXX NB remember to escape / $ ` in heredocs!
+# TODO use appended archive or some curl-able tarball?
+mkdir -p /etc/nixos/shared
+cat > /etc/nixos/networking.nix <<EOF
+# This file will be populated at runtime with the
+# networking details gathered from the active system.
+{...}:{}
+EOF
+cat > /etc/nixos/configuration.nix <<EOF
+{ config, pkgs, ... }: {
+  imports = [
+    ./hardware-configuration.nix
+    ./networking.nix
+    #./shared/essentials.nix
+    #./shared/user-settings.nix
+  ];
+
+  networking.hostName = "$(hostname)";
+  time.timeZone = "America/Los_Angeles";
+  boot.cleanTmpDir = true;
+
+  services.openssh.enable = true;
+  services.tlsdated.enable = true;
+  #services.tlsdated.extraOptions = ""; # BUG fixed in unstable
+
+  networking.firewall.allowPing = true;
+}
+EOF
+# (nixos-generate-config will add qemu-user and bind-mounts, so avoid)
+cat > /etc/nixos/hardware-configuration.nix <<EOF
+{ config, lib, pkgs, ... }: {
+  imports = [ <nixpkgs/nixos/modules/profiles/qemu-guest.nix> ];
+  boot.loader.grub.devices = [ "/dev/vda" ];
+  fileSystems."/" = { device = "/dev/vda1"; fsType = "ext4"; };
+}
+EOF
+#! /usr/bin/env bash
+# NB put your semi-sensitive (not posted to github) configuration in a separate
+# file and include it via this customConfig() function. e.g.:
+#  customConfig() {
+#    cat > /etc/nixos/custom.nix << EOF
+#    { config, lib, pkgs, ... }: {
+#    }
+#    EOF
+#  }
+#
+# then you can add the files in configuration.nix's imports above and run something like:
+#   cat customConfig nixos-infect | root@targethost bash
+if [[ `type -t customConfig` == "function" ]]; then customConfig; fi
+}
+
+makeSwap() {
+  if [[ ! -e /swap ]]; then
+    dd if=/dev/zero of=/swap bs=1M count=$((1024*2))
+    chmod 0600 /swap
+    mkswap /swap
+    swapon /swap
+  fi
+}
+
+bindSubs() {
+  for dir in dev proc run sys; do
+    mkdir $1/$dir
+    mount -R {,$1}/$dir
+  done
+}
+
+makeConf
+makeSwap
+
+apt-get install -y curl sudo rsync
+
+groupadd -r nixbld
+seq 1 10 | xargs -I{} useradd -c "Nix build user {}" -d /var/empty -g nixbld -G nixbld -M -N -r -s `which nologin` nixbld{}
+
+# XXX force version 1.10 because 1.11 insists on nixexprs.tar.xz which is unavailable for older releases
+#curl https://nixos.org/nix/install | sed -r 's|nix-([0-9.]+)|nix-1.10|g' | sh
+curl https://nixos.org/nix/install | sh
+
+source ~/.nix-profile/etc/profile.d/nix.sh
+
+nix-channel --add https://nixos.org/channels/nixos-unstable nixos
+nix-channel --update
+
+# XXX BUG encountered in latest unstable (no permission /bin/bash nonsense)
+#nix-channel --add https://nixos.org/channels/nixos-15.09 nixpkgs
+#nix-channel --update
+
+newRootImg=`mktemp`
+newRootMount=`mktemp -d`
+oldRootMount=`mktemp -d`
+
+export NIXOS_CONFIG=/etc/nixos/configuration.nix
+nix-env -i -f /nix/var/nix/profiles/per-user/root/channels/nixpkgs/nixos \
+  -A config.system.build.nixos-install                                   \
+  -A config.system.build.nixos-option                                    \
+  -A config.system.build.nixos-generate-config
+
+dd if=/dev/zero of=$newRootImg bs=1M count=$((1024*2))
+mkfs.ext4 $newRootImg
+mount $newRootImg $newRootMount
+
+rsync -aR /./etc/nixos $newRootMount
+nixos-install --root $newRootMount
+
+swapoff /swap || true
+mount -B / $oldRootMount
+# XXX bindmount causes /bin/bash permission BUG on many versions (nix 1.10-1.11, nixpkgs 15-16), so just use loopback img for now
+#mount -B $newRoot $newRootMount
+#bindSubs $newRootMount
+rsync -a --delete --exclude=$(dirname $newRootMount) $newRootMount/ $oldRootMount
+
+# restore access to commands (not sure whih of these 3 are essential, nor if order matters XXX)
+export PATH=/nix/var/nix/profiles/system/sw/bin:/nix/var/nix/profiles/system/sw/sbin
+/nix/var/nix/profiles/system/activate
+source /nix/var/nix/profiles/system/etc/profile
+
+# XXX temporary fix for name resolution
+echo nameserver 8.8.4.4 > /etc/resolv.conf
+
+ip4s=$(ip address show dev eth0 | grep 'inet '          | sed -r 's|.*inet ([0-9.]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|')
+ip6s=$(ip address show dev eth0 | grep 'inet6 .*global' | sed -r 's|.*inet6 ([0-9a-f:]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|')
+gateway=$(ip route show dev eth0 | grep default | sed -r 's|default via ([0-9.]+).*|\1|')
+gateway6=$(ip -6 route show dev eth0 | grep default | sed -r 's|default via ([0-9a-f:]+).*|\1|')
+ether0=$(ip address show dev eth0 | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|')
+ether1=$(ip address show dev eth1 | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|')
+
+cat > /etc/nixos/networking.nix <<EOF
+{ config, pkgs, ... }: {
+  networking = {
+    nameservers = [ "8.8.4.4" ];
+    defaultGateway = "$gateway";
+    defaultGateway6 = "$gateway6";
+    interfaces = {
+      eth0 = {
+        ip4 = [ $ip4s ];
+        ip6 = [ $ip6s ];
+      };
+      eth1.useDHCP = false;
+    };
+  };
+ services.udev.extraRules = ''
+    KERNEL=="eth*", ATTR{address}=="$ether0", NAME="eth0"
+    KERNEL=="eth*", ATTR{address}=="$ether1", NAME="eth1"
+  '';
+}
+EOF
+
+# grub/initrd was probably installed incorrectly (using false root device), so we need a final rebuild
+nixos-rebuild boot --install-grub
+
+sync
+reboot -f
+
+#echo s > /proc/sysrq-trigger # sync
+#echo b > /proc/sysrq-trigger # reboot -f better if i fix PATH?
