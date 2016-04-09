@@ -1,5 +1,9 @@
 #! /usr/bin/env bash
 
+# nixos-infect is so named because there's a good chance the system will get
+# sick if anything goes wrong, and possibly die, requiring reprovisioning.
+# Use with caution.
+#
 # WARNING NB This script wipes out the targeted host's root filesystem when it
 # runs to completion. Any errors halt execution. set -x is used to help debug,
 # as often a failed run leaves the system in an inconsistent state, requiring a
@@ -32,16 +36,16 @@
 
 set -ex
 
+# If you have another nixos host in the cloud, add it here to speed up the
+# package downloads. Use "ssh -A" with your key loaded to run the script!
+# This also reduces load on NixOS servers, so please make an effort to use it
+# whenever possible.
+#nix_options+=" --option ssh-substituter-hosts user@host"
+
 makeConf() {
-  # NB remember to escape / $ ` in heredocs!
-  # TODO use appended archive or some curl-able tarball?
+  # NB <<"EOF" quotes / $ ` in heredocs, <<EOF does not
   mkdir -p /etc/nixos
-  IFS=$'\n'; keys=($(cat /root/.ssh/authorized_keys))
-  cat > /etc/nixos/networking.nix << EOF
-# This file will be populated at runtime with the
-# networking details gathered from the active system.
-{...}:{}
-EOF
+  local IFS=$'\n'; keys=($(cat /root/.ssh/authorized_keys))
   cat > /etc/nixos/configuration.nix << EOF
 { ... }: {
   imports = [
@@ -66,6 +70,45 @@ EOF
   fileSystems."/" = { device = "/dev/vda1"; fsType = "ext4"; };
 }
 EOF
+
+  local IFS=$'\n'
+  ip4s=($(ip address show dev eth0 | grep 'inet '          | sed -r 's|.*inet ([0-9.]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|'))
+  ip6s=($(ip address show dev eth0 | grep 'inet6 .*global' | sed -r 's|.*inet6 ([0-9a-f:]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|'))
+  gateway=($(ip route show dev eth0 | grep default | sed -r 's|default via ([0-9.]+).*|\1|'))
+  gateway6=($(ip -6 route show dev eth0 | grep default | sed -r 's|default via ([0-9a-f:]+).*|\1|'))
+  ether0=($(ip address show dev eth0 | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|'))
+  ether1=($(ip address show dev eth1 | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|'))
+  nameservers=($(grep ^nameserver /etc/resolv.conf | cut -f2 -d' '))
+
+  cat > /etc/nixos/networking.nix << EOF
+{ ... }: {
+  # This file was populated at runtime with the networking
+  # details gathered from the active system.
+  networking = {
+    nameservers = [$(for a in ${nameservers[@]}; do echo -n "
+      \"$a\""; done)
+    ];
+    defaultGateway = "${gateway}";
+    defaultGateway6 = "${gateway6}";
+    interfaces = {
+      eth0 = {
+        ip4 = [$(for a in ${ip4s[@]}; do echo -n "
+          $a"; done)
+        ];
+        ip6 = [$(for a in ${ip6s[@]}; do echo -n "
+          $a"; done)
+        ];
+      };
+      # eth1 is for private networking or something?
+      eth1.useDHCP = false;
+    };
+  };
+  services.udev.extraRules = ''
+    KERNEL=="eth*", ATTR{address}=="${ether0}", NAME="eth0"
+    KERNEL=="eth*", ATTR{address}=="${ether1}", NAME="eth1"
+  '';
+}
+EOF
   #! /usr/bin/env bash
   # NB put your semi-sensitive (not posted to github) configuration in a separate
   # file and include it via this customConfig() function. e.g.:
@@ -81,12 +124,13 @@ EOF
   if [[ `type -t customConfig` == "function" ]]; then customConfig; fi
 }
 
+swapFile=/tmp/swap
 makeSwap() {
-  if [[ ! -e /swap ]]; then
-    dd if=/dev/zero of=/swap bs=1M count=$((1024*2))
-    chmod 0600 /swap
-    mkswap /swap
-    swapon /swap
+  if [[ ! -e $swapFile ]]; then
+    dd if=/dev/zero of=$swapFile bs=1M count=$((1024*2))
+    chmod 0600 $swapFile
+    mkswap $swapFile
+    swapon $swapFile
   fi
 }
 
@@ -110,66 +154,37 @@ newRootMount=`mktemp -d`
 oldRootMount=`mktemp -d`
 
 export NIXOS_CONFIG=/etc/nixos/configuration.nix
-nix-env -i -f /nix/var/nix/profiles/per-user/root/channels/nixpkgs/nixos \
-  -A config.system.build.nixos-install                                   \
-  -A config.system.build.nixos-option                                    \
-  -A config.system.build.nixos-generate-config
+nix-env -i                                                      \
+  $nix_options                                                  \
+  -f /nix/var/nix/profiles/per-user/root/channels/nixpkgs/nixos \
+  -A config.system.build.nixos-install
+  #-A config.system.build.nixos-option                                    \
+  #-A config.system.build.nixos-generate-config
 
 # XXX GOTCHA NB bindmount causes /bin/bash permission BUG on many
 # versions (nix 1.10-1.11, nixpkgs 15-16), so we must use loopback image instead.
+# See: https://github.com/NixOS/nixpkgs/issues/10230
 dd if=/dev/zero of=$newRootImg bs=1M count=$((1024*2))
-mkfs.ext4 $newRootImg
+mkfs.ext4 -F $newRootImg
 mount $newRootImg $newRootMount
 
 rsync -aR /./etc/nixos $newRootMount
-nixos-install --root $newRootMount
+nixos-install $nix_options --root $newRootMount
+cp -a {,$newRootMount}/etc/resolv.conf # needed for final rebuild
 
-swapoff /swap
+swapoff $swapFile || true
 mount -B / $oldRootMount
+
+# Everything up to this point is revertible; this is the truly destructive step.
 rsync -a --delete --exclude=$(dirname $newRootMount) $newRootMount/ $oldRootMount
 
-# restore access to commands
+# Restore access to commands
 /nix/var/nix/profiles/system/activate
 source /nix/var/nix/profiles/system/etc/profile
 
-# XXX temporary fix for name resolution
-echo nameserver 8.8.4.4 > /etc/resolv.conf
-
-IFS=$'\n'
-ip4s=($(ip address show dev eth0 | grep 'inet '          | sed -r 's|.*inet ([0-9.]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|'))
-ip6s=($(ip address show dev eth0 | grep 'inet6 .*global' | sed -r 's|.*inet6 ([0-9a-f:]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|'))
-gateway=($(ip route show dev eth0 | grep default | sed -r 's|default via ([0-9.]+).*|\1|'))
-gateway6=($(ip -6 route show dev eth0 | grep default | sed -r 's|default via ([0-9a-f:]+).*|\1|'))
-ether0=($(ip address show dev eth0 | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|'))
-ether1=($(ip address show dev eth1 | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|'))
-
-cat > /etc/nixos/networking.nix << EOF
-{ ... }: {
-  networking = {
-    nameservers = [ "8.8.4.4" ];
-    defaultGateway = "${gateway}";
-    defaultGateway6 = "${gateway6}";
-    interfaces = {
-      eth0 = {
-        ip4 = [$(for a in ${ip4s[@]}; do echo -n "
-          $a"; done)
-        ];
-        ip6 = [$(for a in ${ip6s[@]}; do echo -n "
-          $a"; done)
-        ];
-      };
-      # eth1 is for private networking or something?
-      eth1.useDHCP = false;
-    };
-  };
-  services.udev.extraRules = ''
-    KERNEL=="eth*", ATTR{address}=="${ether0}", NAME="eth0"
-    KERNEL=="eth*", ATTR{address}=="${ether1}", NAME="eth1"
-  '';
-}
-EOF
-
 # grub/initrd was probably installed incorrectly (using false root device), so we need a final rebuild
+# TODO see aszlig's comment in issue about not even having to call rebuild, just nix-build system or something; without ever having to use nixos-install either? and separate ext4fs?
+#   man nixos-rebuild mentions this!!: nixos-rebuid build == nix-build /path/to/nixpkgs/nixos -A system
 nixos-rebuild boot --install-grub
 
 sync
