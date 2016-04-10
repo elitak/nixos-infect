@@ -166,7 +166,7 @@ nix-env -i                                                      \
 # XXX GOTCHA NB bindmount causes /bin/bash permission BUG on many
 # versions (nix 1.10-1.11, nixpkgs 15-16), so we must use loopback image instead.
 # See: https://github.com/NixOS/nixpkgs/issues/10230
-dd if=/dev/zero of=$newRootImg bs=1M count=$((2*1024))
+dd if=/dev/zero of=$newRootImg bs=1M count=2047 # XXX 2048+ will cause mkfs.ext4 to fail on x86
 mkfs.ext4 -F $newRootImg
 mount $newRootImg $newRootMount
 
