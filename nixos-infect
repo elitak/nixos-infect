@@ -46,17 +46,6 @@ set -ex
 # This also reduces load on NixOS servers, so please make an effort to use it
 # whenever possible. Better yet, just clone your VPS using snapshots.
 
-export NIX_CONF_DIR=`mktemp -d`
-cat > $NIX_CONF_DIR/nix.conf << EOF
-use-ssh-substituter = true
-ssh-substituter-hosts = root@159.203.246.187
-EOF
-
-nixCmdOpts+=" --option use-ssh-substituter true"
-nixCmdOpts+=" --option ssh-substituter-hosts root@159.203.246.187"
-mkdir -p ~/.ssh; chmod 0700 ~/.ssh
-echo StrictHostKeyChecking=no >> .ssh/config
-
 nixos_channel=nixos-unstable
 #nixos_channel=nixos-16.03
 
@@ -170,7 +159,7 @@ newRootMount=`mktemp -d`
 oldRootMount=`mktemp -d`
 
 export NIXOS_CONFIG=/etc/nixos/configuration.nix
-nix-env -i $nixCmdOpts                                          \
+nix-env -i                                                      \
   -f /nix/var/nix/profiles/per-user/root/channels/nixpkgs/nixos \
   -A config.system.build.nixos-install
 
@@ -181,10 +170,8 @@ dd if=/dev/zero of=$newRootImg bs=1M count=$((2*1024))
 mkfs.ext4 -F $newRootImg
 mount $newRootImg $newRootMount
 
-rsync -Ra /./etc/nixos           $newRootMount
-rsync -Ra /./root/.ssh           $newRootMount # so that ssh-substituter-hosts works in chroot as well
-nixos-install $nixCmdOpts --root $newRootMount
-rsync -Ra /./nix/store           $newRootMount # cache everything so the next host can use ssh-substituter-hosts
+rsync -Ra /./etc/nixos $newRootMount
+nixos-install --root $newRootMount
 
 mount -B / $oldRootMount
 
@@ -200,7 +187,7 @@ source /nix/var/nix/profiles/system/etc/profile
 # grub/initrd was probably installed incorrectly (using false root device), so we need a final rebuild
 # TODO see aszlig's comment in issue about not even having to call rebuild, just nix-build system or something; without ever having to use nixos-install either? and separate ext4fs?
 #   man nixos-rebuild mentions this!!: nixos-rebuid build == nix-build /path/to/nixpkgs/nixos -A system
-nixos-rebuild $nixCmdOpts boot --install-grub
+nixos-rebuild boot --install-grub
 
 #swapoff $swapFile && rm -f $swapFile || true
 sync
