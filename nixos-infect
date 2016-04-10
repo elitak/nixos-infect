@@ -18,9 +18,13 @@
 # This was last tested with the DigitalOcean Debian 8.3 x64 and Ubuntu 15.10
 # x64 images. Different versions and archs (namely i386) should work as well,
 # but then, there's not much point in selecting something different if you
-# intend to wipe out the fs, as this script does. You may need to make minor
-# modifications to use in other templates, but basically all that will ever
-# need tweaking are already inlined in this file:
+# intend to wipe out the fs, as this script does. Some Ubuntu droplets have gpt
+# partition tables but only a single ext4 root partition. It's way too much
+# effort to try to get nixos to install grub using blocklists, so just avoid
+# improperly configured images like those.
+#
+# You may need to make minor modifications to use in other templates, but
+# basically all that will ever need tweaking are already inlined in this file:
 #  /etc/nixos/{,hardware-}configuration.nix : rudimentary mostly static config
 #  /etc/nixos/networking.nix, networking settings determined at runtime
 #    tweak if no ipv6, different number of adapters, etc.
@@ -36,11 +40,25 @@
 
 set -ex
 
-# If you have another nixos host in the cloud, add it here to speed up the
+# If you have another NixOS host in the cloud, add it here to speed up the
 # package downloads. Use "ssh -A" with your key loaded to run the script!
+# (also ssh-keygen -R the host so that agent forwarding isn't disabled)
 # This also reduces load on NixOS servers, so please make an effort to use it
-# whenever possible.
-#nix_options+=" --option ssh-substituter-hosts user@host"
+# whenever possible. Better yet, just clone your VPS using snapshots.
+
+export NIX_CONF_DIR=`mktemp -d`
+cat > $NIX_CONF_DIR/nix.conf << EOF
+use-ssh-substituter = true
+ssh-substituter-hosts = root@159.203.246.187
+EOF
+
+nixCmdOpts+=" --option use-ssh-substituter true"
+nixCmdOpts+=" --option ssh-substituter-hosts root@159.203.246.187"
+mkdir -p ~/.ssh; chmod 0700 ~/.ssh
+echo StrictHostKeyChecking=no >> .ssh/config
+
+nixos_channel=nixos-unstable
+#nixos_channel=nixos-16.03
 
 makeConf() {
   # NB <<"EOF" quotes / $ ` in heredocs, <<EOF does not
@@ -124,20 +142,18 @@ EOF
   if [[ `type -t customConfig` == "function" ]]; then customConfig; fi
 }
 
-swapFile=/tmp/swap
 makeSwap() {
-  if [[ ! -e $swapFile ]]; then
-    dd if=/dev/zero of=$swapFile bs=1M count=$((1024*2))
-    chmod 0600 $swapFile
-    mkswap $swapFile
-    swapon $swapFile
-  fi
+  swapFile=`mktemp`
+  dd if=/dev/zero of=$swapFile bs=1M count=$((1*1024))
+  chmod 0600 $swapFile
+  mkswap $swapFile
+  swapon $swapFile
 }
 
 makeConf
 makeSwap # smallest (512MB) droplet needs extra memory!
 
-apt-get install -y curl sudo rsync
+apt-get install -y curl rsync sudo
 
 groupadd -r nixbld
 seq 1 10 | xargs -I{} useradd -c "Nix build user {}" -d /var/empty -g nixbld -G nixbld -M -N -r -s `which nologin` nixbld{}
@@ -146,7 +162,7 @@ curl https://nixos.org/nix/install | sh
 
 source ~/.nix-profile/etc/profile.d/nix.sh
 
-nix-channel --add https://nixos.org/channels/nixos-unstable nixos
+nix-channel --add https://nixos.org/channels/${nixos_channel} nixos
 nix-channel --update
 
 newRootImg=`mktemp`
@@ -154,39 +170,39 @@ newRootMount=`mktemp -d`
 oldRootMount=`mktemp -d`
 
 export NIXOS_CONFIG=/etc/nixos/configuration.nix
-nix-env -i                                                      \
-  $nix_options                                                  \
+nix-env -i $nixCmdOpts                                          \
   -f /nix/var/nix/profiles/per-user/root/channels/nixpkgs/nixos \
   -A config.system.build.nixos-install
-  #-A config.system.build.nixos-option                                    \
-  #-A config.system.build.nixos-generate-config
 
 # XXX GOTCHA NB bindmount causes /bin/bash permission BUG on many
 # versions (nix 1.10-1.11, nixpkgs 15-16), so we must use loopback image instead.
 # See: https://github.com/NixOS/nixpkgs/issues/10230
-dd if=/dev/zero of=$newRootImg bs=1M count=$((1024*2))
+dd if=/dev/zero of=$newRootImg bs=1M count=$((2*1024))
 mkfs.ext4 -F $newRootImg
 mount $newRootImg $newRootMount
 
-rsync -aR /./etc/nixos $newRootMount
-nixos-install $nix_options --root $newRootMount
-cp -a {,$newRootMount}/etc/resolv.conf # needed for final rebuild
+rsync -Ra /./etc/nixos           $newRootMount
+rsync -Ra /./root/.ssh           $newRootMount # so that ssh-substituter-hosts works in chroot as well
+nixos-install $nixCmdOpts --root $newRootMount
+rsync -Ra /./nix/store           $newRootMount # cache everything so the next host can use ssh-substituter-hosts
 
-swapoff $swapFile || true
 mount -B / $oldRootMount
 
 # Everything up to this point is revertible; this is the truly destructive step.
 rsync -a --delete --exclude=$(dirname $newRootMount) $newRootMount/ $oldRootMount
 
 # Restore access to commands
-/nix/var/nix/profiles/system/activate
+/nix/var/nix/profiles/system/activate # (this destroys resolv.conf)
+for a in ${nameservers[@]}; do echo "nameserver $a" >> /etc/resolv.conf; done
 source /nix/var/nix/profiles/system/etc/profile
+
 
 # grub/initrd was probably installed incorrectly (using false root device), so we need a final rebuild
 # TODO see aszlig's comment in issue about not even having to call rebuild, just nix-build system or something; without ever having to use nixos-install either? and separate ext4fs?
 #   man nixos-rebuild mentions this!!: nixos-rebuid build == nix-build /path/to/nixpkgs/nixos -A system
-nixos-rebuild boot --install-grub
+nixos-rebuild $nixCmdOpts boot --install-grub
 
+#swapoff $swapFile && rm -f $swapFile || true
 sync
 echo "You may now Ctrl-C or otherwise terminate this process."
 reboot -f
