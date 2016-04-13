@@ -40,19 +40,13 @@
 
 set -ex
 
-# If you have another NixOS host in the cloud, add it here to speed up the
-# package downloads. Use "ssh -A" with your key loaded to run the script!
-# (also ssh-keygen -R the host so that agent forwarding isn't disabled)
-# This also reduces load on NixOS servers, so please make an effort to use it
-# whenever possible. Better yet, just clone your VPS using snapshots.
-
 nixos_channel=nixos-unstable
 #nixos_channel=nixos-16.03
 
 makeConf() {
   # NB <<"EOF" quotes / $ ` in heredocs, <<EOF does not
   mkdir -p /etc/nixos
-  local IFS=$'\n'; keys=($(cat /root/.ssh/authorized_keys))
+  local IFS=$'\n'; keys=($(grep -vE '^[[:space:]]*(#|$)' /root/.ssh/authorized_keys))
   cat > /etc/nixos/configuration.nix << EOF
 { ... }: {
   imports = [
