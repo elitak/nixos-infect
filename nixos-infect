@@ -15,13 +15,13 @@
 #  - Deploy a Debian 8.3 x64 droplet (enable ipv6; add your ssh key)
 #  - cat customConfig.optional nixos-infect | ssh root@targethost bash
 #
-# This was last tested with the DigitalOcean Debian 8.3 x64 and Ubuntu 15.10
-# x64 images. Different versions and archs (namely i386) should work as well,
-# but then, there's not much point in selecting something different if you
-# intend to wipe out the fs, as this script does. Some Ubuntu droplets have gpt
-# partition tables but only a single ext4 root partition. It's way too much
-# effort to try to get nixos to install grub using blocklists, so just avoid
-# improperly configured images like those.
+# This was last tested with the DigitalOcean Debian 8.3 x64 image. Different
+# versions and archs (namely i386) should work as well, but then, there's not
+# much point in selecting something different if you intend to wipe out the fs,
+# as this script does. Some Ubuntu droplets have gpt partition tables but no
+# bios partition for grub allocated. It's way too much effort to try to get
+# NixOS to install grub using blocklists, so just avoid improperly configured
+# images like those.
 #
 # You may need to make minor modifications to use in other templates, but
 # basically all that will ever need tweaking are already inlined in this file:
@@ -170,6 +170,7 @@ nixos-install --root $newRootMount
 mount -B / $oldRootMount
 
 # Everything up to this point is revertible; this is the truly destructive step.
+# GOTCHAs when running manually: very easy to forget slash at end of source, or use / as dest instead of bindmounted root, both of which are catastrophic...
 rsync -a --delete --exclude=$(dirname $newRootMount) $newRootMount/ $oldRootMount
 
 # Restore access to commands
