@@ -1,4 +1,5 @@
 #! /usr/bin/env bash
+# TODO config grubdev "nodev", then run installgrub again after. this way, grub has a chance of booting even if the install-gurb fails
 
 # nixos-infect is so named because there's a good chance the system will get
 # sick if anything goes wrong, and possibly die, requiring reprovisioning.
@@ -65,9 +66,11 @@ makeConf() {
 EOF
   # (nixos-generate-config will add qemu-user and bind-mounts, so avoid)
   cat > /etc/nixos/hardware-configuration.nix << EOF
-{ ... }: {
+{ ... }:
+let grubDev = "nodev"; in
+{
   imports = [ <nixpkgs/nixos/modules/profiles/qemu-guest.nix> ];
-  boot.loader.grub.devices = [ "/dev/vda" ];
+  boot.loader.grub.device = grubDev;
   fileSystems."/" = { device = "/dev/vda1"; fsType = "ext4"; };
 }
 EOF
@@ -179,10 +182,11 @@ for a in ${nameservers[@]}; do echo "nameserver $a" >> /etc/resolv.conf; done
 source /nix/var/nix/profiles/system/etc/profile
 
 
-# grub/initrd was probably installed incorrectly (using false root device), so we need a final rebuild
+# grub/initrd was skipped with "nodev", so we need a final rebuild
+sed -i 's,nodev,/dev/vda1,' /etc/nixos/hardware-configuration.nix
 # TODO see aszlig's comment in issue about not even having to call rebuild, just nix-build system or something; without ever having to use nixos-install either? and separate ext4fs?
 #   man nixos-rebuild mentions this!!: nixos-rebuid build == nix-build /path/to/nixpkgs/nixos -A system
-nixos-rebuild boot --install-grub
+nixos-rebuild boot --install-grub || echo "WARNING: could not install grub, but we'll hope for the best: that the old installation of grub will manage to boot the new installation."
 
 #swapoff $swapFile && rm -f $swapFile || true
 sync
