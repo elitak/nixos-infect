@@ -1,9 +1,14 @@
 #! /usr/bin/env bash
-# TODO config grubdev "nodev", then run installgrub again after. this way, grub has a chance of booting even if the install-gurb fails
 
-# nixos-infect is so named because there's a good chance the system will get
-# sick if anything goes wrong, and possibly die, requiring reprovisioning.
-# Use with caution.
+# Use Droplet image:
+#
+#     Ubuntu 16.04 (x64 or x32)
+#
+# YMMV with any other hoster + image combination.
+
+# nixos-infect is so named because of the high likelihood of rendering a system
+# inoperable. Use with caution and preferably only on newly-provisioned
+# systems.
 #
 # WARNING NB This script wipes out the targeted host's root filesystem when it
 # runs to completion. Any errors halt execution. set -x is used to help debug,
@@ -16,16 +21,7 @@
 #  - Deploy a Debian 8.3 x64 droplet (enable ipv6; add your ssh key)
 #  - cat customConfig.optional nixos-infect | ssh root@targethost bash
 #
-# This was last tested with the DigitalOcean Debian 8.3 x64 image. Different
-# versions and archs (namely i386) should work as well, but then, there's not
-# much point in selecting something different if you intend to wipe out the fs,
-# as this script does. Some Ubuntu droplets have gpt partition tables but no
-# bios partition for grub allocated. It's way too much effort to try to get
-# NixOS to install grub using blocklists, so just avoid improperly configured
-# images like those.
-#
-# You may need to make minor modifications to use in other templates, but
-# basically all that will ever need tweaking are already inlined in this file:
+# Potential tweaks:
 #  /etc/nixos/{,hardware-}configuration.nix : rudimentary mostly static config
 #  /etc/nixos/networking.nix, networking settings determined at runtime
 #    tweak if no ipv6, different number of adapters, etc.
@@ -42,7 +38,6 @@
 set -ex
 
 nixos_channel=nixos-unstable
-#nixos_channel=nixos-16.03
 
 makeConf() {
   # NB <<"EOF" quotes / $ ` in heredocs, <<EOF does not
@@ -136,6 +131,24 @@ makeSwap() {
   swapon $swapFile
 }
 
+# This is a fix for /dev/shm being a symlink to /run/shm, where tmpfs is mounted.
+# There is a BUG in nixos-install that needs to be investigated.
+# The HACK is to just mount over whatever's there.
+hackDevShm() {
+  umount /dev/shm || true
+  rm -rf /dev/shm
+  mkdir /dev/shm
+  mount -t tmpfs none /dev/shm
+}
+
+# Sometimes various mountpoints cause a non-zero exit on rsync
+hackUmountMisc() {
+  umount /var/lib/lxcfs || true
+}
+
+hackDevShm
+hackUmountMisc
+
 makeConf
 makeSwap # smallest (512MB) droplet needs extra memory!
 
@@ -174,7 +187,7 @@ mount -B / $oldRootMount
 
 # Everything up to this point is revertible; this is the truly destructive step.
 # GOTCHAs when running manually: very easy to forget slash at end of source, or use / as dest instead of bindmounted root, both of which are catastrophic...
-rsync -a --delete --exclude=$(dirname $newRootMount) $newRootMount/ $oldRootMount
+rsync -a --delete --exclude=$(dirname $newRootMount) $newRootMount/ $oldRootMount || true
 
 # Restore access to commands
 /nix/var/nix/profiles/system/activate # (this destroys resolv.conf)
