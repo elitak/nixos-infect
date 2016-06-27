@@ -1,8 +1,8 @@
 #! /usr/bin/env bash
 
-# Use Droplet image:
+# Use Digital Ocean Droplet image:
 #
-#     Ubuntu 16.04 (x64 or x32)
+#     Fedora 24 x64
 #
 # YMMV with any other hoster + image combination.
 
@@ -18,8 +18,8 @@
 #
 # TO USE:
 #  - Add any custom config you want (see notes below)
-#  - Deploy a Debian 8.3 x64 droplet (enable ipv6; add your ssh key)
-#  - cat customConfig.optional nixos-infect | ssh root@targethost bash
+#  - Deploy the droplet indicated at the top of the file, enable ipv6, add your ssh key
+#  - cat customConfig.optional nixos-infect | ssh root@targethost
 #
 # Potential tweaks:
 #  /etc/nixos/{,hardware-}configuration.nix : rudimentary mostly static config
@@ -62,10 +62,9 @@ EOF
   # (nixos-generate-config will add qemu-user and bind-mounts, so avoid)
   cat > /etc/nixos/hardware-configuration.nix << EOF
 { ... }:
-let grubDev = "nodev"; in
 {
   imports = [ <nixpkgs/nixos/modules/profiles/qemu-guest.nix> ];
-  boot.loader.grub.device = grubDev;
+  boot.loader.grub.device = "nodev";
   fileSystems."/" = { device = "/dev/vda1"; fsType = "ext4"; };
 }
 EOF
@@ -131,28 +130,10 @@ makeSwap() {
   swapon $swapFile
 }
 
-# This is a fix for /dev/shm being a symlink to /run/shm, where tmpfs is mounted.
-# There is a BUG in nixos-install that needs to be investigated.
-# The HACK is to just mount over whatever's there.
-hackDevShm() {
-  umount /dev/shm || true
-  rm -rf /dev/shm
-  mkdir /dev/shm
-  mount -t tmpfs none /dev/shm
-}
-
-# Sometimes various mountpoints cause a non-zero exit on rsync
-hackUmountMisc() {
-  umount /var/lib/lxcfs || true
-}
-
-hackDevShm
-hackUmountMisc
-
 makeConf
 makeSwap # smallest (512MB) droplet needs extra memory!
 
-apt-get install -y curl rsync sudo
+dnf install -y perl-Digest-SHA || true # Fedora 24
 
 groupadd -r nixbld
 seq 1 10 | xargs -I{} useradd -c "Nix build user {}" -d /var/empty -g nixbld -G nixbld -M -N -r -s `which nologin` nixbld{}
@@ -191,17 +172,15 @@ rsync -a --delete --exclude=$(dirname $newRootMount) $newRootMount/ $oldRootMoun
 
 # Restore access to commands
 /nix/var/nix/profiles/system/activate # (this destroys resolv.conf)
-for a in ${nameservers[@]}; do echo "nameserver $a" >> /etc/resolv.conf; done
+for ns in ${nameservers[@]}; do echo "nameserver $ns" >> /etc/resolv.conf; done
 source /nix/var/nix/profiles/system/etc/profile
 
-
-# grub/initrd was skipped with "nodev", so we need a final rebuild
-sed -i 's,nodev,/dev/vda1,' /etc/nixos/hardware-configuration.nix
+# grub/initrd was skipped with "nodev", because installing from inside install-root would result in wrong fs UUID, so we need a final rebuild
+sed -i 's,nodev,/dev/vda,' /etc/nixos/hardware-configuration.nix
 # TODO see aszlig's comment in issue about not even having to call rebuild, just nix-build system or something; without ever having to use nixos-install either? and separate ext4fs?
 #   man nixos-rebuild mentions this!!: nixos-rebuid build == nix-build /path/to/nixpkgs/nixos -A system
 nixos-rebuild boot --install-grub || echo "WARNING: could not install grub, but we'll hope for the best: that the old installation of grub will manage to boot the new installation."
 
-#swapoff $swapFile && rm -f $swapFile || true
 sync
 echo "You may now Ctrl-C or otherwise terminate this process."
 reboot -f
