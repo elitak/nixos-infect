@@ -3,6 +3,8 @@
 # Use Digital Ocean Droplet image:
 #
 #     Fedora 24 x64
+#     Ubuntu 16.04 x64
+#     Debian 8.5 x64
 #
 # YMMV with any other hoster + image combination.
 
@@ -45,8 +47,7 @@
 
 set -ex
 
-# nixpkgs="https://github.com/NixOS/nixpkgs-channels/archive/nixos-unstable.tar.gz"
-nixpkgs="https://github.com/NixOS/nixpkgs/archive/ba50fd7.tar.gz"
+nixpkgs="https://github.com/NixOS/nixpkgs-channels/archive/nixos-unstable.tar.gz"
 
 makeConf() {
   # NB <<"EOF" quotes / $ ` in heredocs, <<EOF does not
