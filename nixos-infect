@@ -47,8 +47,6 @@
 
 set -ex
 
-nixpkgs="https://github.com/NixOS/nixpkgs-channels/archive/nixos-unstable.tar.gz"
-
 makeConf() {
   # NB <<"EOF" quotes / $ ` in heredocs, <<EOF does not
   mkdir -p /etc/nixos
@@ -156,11 +154,15 @@ curl https://nixos.org/nix/install | sh
 
 source ~/.nix-profile/etc/profile.d/nix.sh
 
-nix-channel --remove \*
-export NIX_PATH="nixpkgs=$nixpkgs"
+[ -z "$NIX_CHANNEL"] && NIX_CHANNEL="nixos-16.09"
+nix-channel --remove nixpkgs
+nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
+nix-channel --update
+
 export NIXOS_CONFIG=/etc/nixos/configuration.nix
 
 nix-env --set \
+  -I nixpkgs=$HOME/.nix-defexpr/channels/nixos \
   -f '<nixpkgs/nixos>' \
   -p /nix/var/nix/profiles/system \
   -A system
@@ -177,6 +179,7 @@ touch /etc/NIXOS
 cat > /etc/NIXOS_LUSTRATE << EOF
 etc/nixos
 etc/resolv.conf
+root/.nix-defexpr/channels
 EOF
 
 mv -v /boot /boot.bak &&
