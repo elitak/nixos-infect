@@ -78,8 +78,10 @@ EOF
 EOF
 
   local IFS=$'\n'
-  ip4s=($(ip address show dev eth0 | grep 'inet '          | sed -r 's|.*inet ([0-9.]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|'))
-  ip6s=($(ip address show dev eth0 | grep 'inet6 .*global' | sed -r 's|.*inet6 ([0-9a-f:]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|'))
+  eth0_ip4s=($(ip address show dev eth0 | grep 'inet '          | sed -r 's|.*inet ([0-9.]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|'))
+  eth0_ip6s=($(ip address show dev eth0 | grep 'inet6 .*global' | sed -r 's|.*inet6 ([0-9a-f:]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|'))
+  eth1_ip4s=($(ip address show dev eth1 | grep 'inet '          | sed -r 's|.*inet ([0-9.]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|'))
+  eth1_ip6s=($(ip address show dev eth1 | grep 'inet6 .*global' | sed -r 's|.*inet6 ([0-9a-f:]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|'))
   gateway=($(ip route show dev eth0 | grep default | sed -r 's|default via ([0-9.]+).*|\1|'))
   gateway6=($(ip -6 route show dev eth0 | grep default | sed -r 's|default via ([0-9a-f:]+).*|\1|'))
   ether0=($(ip address show dev eth0 | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|'))
@@ -98,15 +100,21 @@ EOF
     defaultGateway6 = "${gateway6}";
     interfaces = {
       eth0 = {
-        ip4 = [$(for a in ${ip4s[@]}; do echo -n "
+        ip4 = [$(for a in ${eth0_ip4s[@]}; do echo -n "
           $a"; done)
         ];
-        ip6 = [$(for a in ${ip6s[@]}; do echo -n "
+        ip6 = [$(for a in ${eth1_ip6s[@]}; do echo -n "
           $a"; done)
         ];
       };
-      # eth1 is for private networking or something?
-      eth1.useDHCP = false;
+      eth1 = {
+        ip4 = [$(for a in ${eth1_ip4s[@]}; do echo -n "
+          $a"; done)
+        ];
+        ip6 = [$(for a in ${eth1_ip6s[@]}; do echo -n "
+          $a"; done)
+        ];
+      };
     };
   };
   services.udev.extraRules = ''
