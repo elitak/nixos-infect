@@ -47,6 +47,9 @@
 
 set -ex
 
+export disk=$( (>/dev/null ls -l /dev/vda && echo vda) \
+   || (>/dev/null ls -l /dev/sda && echo sda) ) 
+
 makeConf() {
   # NB <<"EOF" quotes / $ ` in heredocs, <<EOF does not
   mkdir -p /etc/nixos
@@ -72,8 +75,8 @@ EOF
 { ... }:
 {
   imports = [ <nixpkgs/nixos/modules/profiles/qemu-guest.nix> ];
-  boot.loader.grub.device = "/dev/vda";
-  fileSystems."/" = { device = "/dev/vda1"; fsType = "ext4"; };
+  boot.loader.grub.device = "/dev/$disk";
+  fileSystems."/" = { device = "/dev/${disk}1"; fsType = "ext4"; };
 }
 EOF
 
@@ -150,13 +153,14 @@ makeConf
 makeSwap # smallest (512MB) droplet needs extra memory!
 
 which dnf && dnf install -y perl-Digest-SHA # Fedora 24
+which bzcat || (which yum && yum install -y bzip2) # CentOS
 
 # DigitalOcean doesn't seem to set USER while running user data
 export USER="root"
 export HOME="/root"
 
-groupadd -r nixbld -g 30000
-seq 1 10 | xargs -I{} useradd -c "Nix build user {}" -d /var/empty -g nixbld -G nixbld -M -N -r -s `which nologin` nixbld{}
+groupadd -r nixbld -g 30000 || true
+seq 1 10 | xargs -I{} useradd -c "Nix build user {}" -d /var/empty -g nixbld -G nixbld -M -N -r -s `which nologin` nixbld{} || true
 
 curl https://nixos.org/nix/install | sh
 
@@ -190,7 +194,7 @@ etc/resolv.conf
 root/.nix-defexpr/channels
 EOF
 
-mv -v /boot /boot.bak &&
+rm -rf /boot.bak && mv -v /boot /boot.bak &&
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 
 reboot
