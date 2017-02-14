@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-# Use Digital Ocean Droplet image:
+# These are the only supported Digital Ocean images:
 #
 #     Fedora 24 x64
 #     Ubuntu 16.04 x64
@@ -45,10 +45,7 @@
 # simply didn't work for me! (old system was being because grub wasnt properly
 # reinstalled)
 
-set -ex
-
-export disk=$( (>/dev/null ls -l /dev/vda && echo vda) \
-   || (>/dev/null ls -l /dev/sda && echo sda) ) 
+set -ex -o pipefail
 
 makeConf() {
   # NB <<"EOF" quotes / $ ` in heredocs, <<EOF does not
@@ -142,6 +139,7 @@ EOF
 }
 
 makeSwap() {
+  # TODO check currently available swapspace first
   swapFile=`mktemp`
   dd if=/dev/zero of=$swapFile bs=1M count=$((1*1024))
   chmod 0600 $swapFile
@@ -149,52 +147,71 @@ makeSwap() {
   swapon $swapFile
 }
 
-makeConf
-makeSwap # smallest (512MB) droplet needs extra memory!
+prepareEnv() {
+  which dnf && dnf install -y perl-Digest-SHA # Fedora 24
+  which bzcat || (which yum && yum install -y bzip2) # CentOS
 
-which dnf && dnf install -y perl-Digest-SHA # Fedora 24
-which bzcat || (which yum && yum install -y bzip2) # CentOS
+  # $disk is used in makeConf()
+  disk=$( (test -e /dev/vda && echo vda)
+       || (test -e /dev/sda && echo sda) )
 
-# DigitalOcean doesn't seem to set USER while running user data
-export USER="root"
-export HOME="/root"
+  # DigitalOcean doesn't seem to set USER while running user data
+  export USER="root"
+  export HOME="/root"
 
-groupadd -r nixbld -g 30000 || true
-seq 1 10 | xargs -I{} useradd -c "Nix build user {}" -d /var/empty -g nixbld -G nixbld -M -N -r -s `which nologin` nixbld{} || true
+  # FIXME run only if necessary
+  groupadd -r nixbld -g 30000 || true
+  seq 1 10 | xargs -I{} useradd -c "Nix build user {}" -d /var/empty -g nixbld -G nixbld -M -N -r -s `which nologin` nixbld{} || true
+}
 
-curl https://nixos.org/nix/install | sh
+checkEnv() {
+  # TODO: use wget -O- if available instead of curl. This involves patching the
+  # /nix/install script to not check for curl and use `wget -O` instead of
+  # `curl -L # -o`
+  ( which curl  || echo "ERROR: Missing curl"  ) && \
+  ( which bzcat || echo "ERROR: Missing bzcat" ) && \
+  ( which perl  || echo "ERROR: Missing perl"  )
+}
 
-source ~/.nix-profile/etc/profile.d/nix.sh
+infect() {
+  makeConf
+  makeSwap # smallest (512MB) droplet needs extra memory!
 
-[ -z "$NIX_CHANNEL"] && NIX_CHANNEL="nixos-16.09"
-nix-channel --remove nixpkgs
-nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
-nix-channel --update
+  curl https://nixos.org/nix/install | sh
 
-export NIXOS_CONFIG=/etc/nixos/configuration.nix
+  source ~/.nix-profile/etc/profile.d/nix.sh
 
-nix-env --set \
-  -I nixpkgs=$HOME/.nix-defexpr/channels/nixos \
-  -f '<nixpkgs/nixos>' \
-  -p /nix/var/nix/profiles/system \
-  -A system
+  [ -z "$NIX_CHANNEL"] && NIX_CHANNEL="nixos-16.09"
+  nix-channel --remove nixpkgs
+  nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
+  nix-channel --update
 
-# Remove nix installed with curl | bash
-rm -fv /nix/var/nix/profiles/default*
-/nix/var/nix/profiles/system/sw/bin/nix-collect-garbage
+  export NIXOS_CONFIG=/etc/nixos/configuration.nix
 
-# Follow the symlinks
-[ -L /etc/resolv.conf ] && mv -v /etc/resolv.conf /etc/resolv.conf.lnk && cat /etc/resolv.conf.lnk > /etc/resolv.conf
+  nix-env --set \
+    -I nixpkgs=$HOME/.nix-defexpr/channels/nixos \
+    -f '<nixpkgs/nixos>' \
+    -p /nix/var/nix/profiles/system \
+    -A system
 
-# Staging for the Nix coup d'état
-touch /etc/NIXOS
-cat > /etc/NIXOS_LUSTRATE << EOF
-etc/nixos
-etc/resolv.conf
-root/.nix-defexpr/channels
-EOF
+  # Remove nix installed with curl | bash
+  rm -fv /nix/var/nix/profiles/default*
+  /nix/var/nix/profiles/system/sw/bin/nix-collect-garbage
 
-rm -rf /boot.bak && mv -v /boot /boot.bak &&
-  /nix/var/nix/profiles/system/bin/switch-to-configuration boot
+  # Follow the symlinks
+  [ -L /etc/resolv.conf ] && mv -v /etc/resolv.conf /etc/resolv.conf.lnk && cat /etc/resolv.conf.lnk > /etc/resolv.conf
 
-reboot
+  # Staging for the Nix coup d'état
+  touch /etc/NIXOS
+  cat > /etc/NIXOS_LUSTRATE << EOF
+  etc/nixos
+  etc/resolv.conf
+  root/.nix-defexpr/channels
+  EOF
+
+  rm -rf /boot.bak && mv -v /boot /boot.bak &&
+    /nix/var/nix/profiles/system/bin/switch-to-configuration boot
+}
+
+prepareEnv
+checkEnv && infect && reboot
