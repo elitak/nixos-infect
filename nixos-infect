@@ -135,7 +135,7 @@ EOF
   #
   # then you can add the files in configuration.nix's imports above and run something like:
   #   cat customConfig nixos-infect | root@targethost bash
-  if [[ `type -t customConfig` == "function" ]]; then customConfig; fi
+  if [[ "$(type -t customConfig)" == "function" ]]; then customConfig; fi
 }
 
 makeSwap() {
@@ -148,40 +148,74 @@ makeSwap() {
 }
 
 prepareEnv() {
-  which dnf && dnf install -y perl-Digest-SHA # Fedora 24
-  which bzcat || (which yum && yum install -y bzip2) # CentOS
-
   # $disk is used in makeConf()
-  disk=$( (test -e /dev/vda && echo vda)
-       || (test -e /dev/sda && echo sda) )
+  for disk in vda sda; do [[ -e /dev/$disk ]] && break; done
 
   # DigitalOcean doesn't seem to set USER while running user data
   export USER="root"
   export HOME="/root"
 
-  # FIXME run only if necessary
-  groupadd -r nixbld -g 30000 || true
-  seq 1 10 | xargs -I{} useradd -c "Nix build user {}" -d /var/empty -g nixbld -G nixbld -M -N -r -s `which nologin` nixbld{} || true
+  # Use adapted wget if curl is missing
+  which curl || { \
+    curl() {
+      eval "wget $(
+        (local isStdout=1
+        for arg in "$@"; do
+          case "$arg" in
+            "-o")
+              echo "-O";
+              isStdout=0
+              ;;
+            "-O")
+              isStdout=0
+              ;;
+            "-L")
+              ;;
+            *)
+              echo "$arg"
+              ;;
+          esac
+        done;
+        [[ $isStdout -eq 1 ]] && echo "-O-"
+        )| tr '\n' ' '
+      )"
+    }; export -f curl; }
+
+  # Nix installer tries to use sudo regardless of whether we're already uid 0  
+  #which sudo || { sudo() { eval "$@"; }; export -f sudo; }
+  mkdir -p -m 0755 /nix
+}
+
+req() {
+  type "$1" > /dev/null 2>&1 || which "$1" > /dev/null 2>&1
 }
 
 checkEnv() {
-  # TODO: use wget -O- if available instead of curl. This involves patching the
-  # /nix/install script to not check for curl and use `wget -O` instead of
-  # `curl -L # -o`
-  ( which curl  || echo "ERROR: Missing curl"  ) && \
-  ( which bzcat || echo "ERROR: Missing bzcat" ) && \
-  ( which perl  || echo "ERROR: Missing perl"  )
+  # Perform some easy fixups before checking
+  which dnf && dnf install -y perl-Digest-SHA # Fedora 24
+  which bzcat || (which yum && yum install -y bzip2) # CentOS
+
+  [[ "$(whoami)" == "root" ]] || { echo "ERROR: Must run as root"; return 1; }
+
+  ( req curl || req wget || echo "ERROR: Missing both curl and wget" ) && \
+  ( req bzcat            || echo "ERROR: Missing bzcat" ) && \
+  ( req perl             || echo "ERROR: Missing perl" ) && \
+  ( req groupadd         || echo "ERROR: Missing groupadd" ) && \
+  ( req useradd          || echo "ERROR: Missing useradd" ) \
+  || return 1
 }
 
 infect() {
-  makeConf
-  makeSwap # smallest (512MB) droplet needs extra memory!
+  # Add nix build users
+  # FIXME run only if necessary, rather than defaulting true
+  groupadd -r nixbld -g 30000 || true
+  for i in {1..10}; do useradd -c "Nix build user $i" -d /var/empty -g nixbld -G nixbld -M -N -r -s $(which nologin) nixbld$i || true; done
 
-  curl https://nixos.org/nix/install | sh
+  curl https://nixos.org/nix/install | $SHELL
 
   source ~/.nix-profile/etc/profile.d/nix.sh
 
-  [ -z "$NIX_CHANNEL"] && NIX_CHANNEL="nixos-16.09"
+  [[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-16.09"
   nix-channel --remove nixpkgs
   nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
   nix-channel --update
@@ -198,20 +232,22 @@ infect() {
   rm -fv /nix/var/nix/profiles/default*
   /nix/var/nix/profiles/system/sw/bin/nix-collect-garbage
 
-  # Follow the symlinks
-  [ -L /etc/resolv.conf ] && mv -v /etc/resolv.conf /etc/resolv.conf.lnk && cat /etc/resolv.conf.lnk > /etc/resolv.conf
+  # Reify resolv.conf
+  [[ -L /etc/resolv.conf ]] && mv -v /etc/resolv.conf /etc/resolv.conf.lnk && cat /etc/resolv.conf.lnk > /etc/resolv.conf
 
-  # Staging for the Nix coup d'état
+  # Stage the Nix coup d'état
   touch /etc/NIXOS
-  cat > /etc/NIXOS_LUSTRATE << EOF
-  etc/nixos
-  etc/resolv.conf
-  root/.nix-defexpr/channels
-  EOF
+  echo etc/nixos                   > /etc/NIXOS_LUSTRATE
+  echo etc/resolv.conf            >> /etc/NIXOS_LUSTRATE
+  echo root/.nix-defexpr/channels >> /etc/NIXOS_LUSTRATE
 
-  rm -rf /boot.bak && mv -v /boot /boot.bak &&
+  rm -rf /boot.bak && mv -v /boot /boot.bak && \
     /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
 
 prepareEnv
-checkEnv && infect && reboot
+checkEnv
+makeConf
+makeSwap # smallest (512MB) droplet needs extra memory!
+infect
+reboot
