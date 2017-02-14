@@ -13,10 +13,10 @@
 # systems.
 #
 # WARNING NB This script wipes out the targeted host's root filesystem when it
-# runs to completion. Any errors halt execution. set -x is used to help debug,
-# as often a failed run leaves the system in an inconsistent state, requiring a
-# rebuild (in DigitalOcean panel: Droplet Settings -> "Destroy" -> "Rebuild
-# from original").
+# runs to completion. Any errors halt execution. It's advised to run with
+# `bash -x` to help debug, as often a failed run leaves the system in an
+# inconsistent state, requiring a rebuild (in DigitalOcean panel: Droplet
+# Settings -> "Destroy" -> "Rebuild from original").
 #
 # TO USE:
 #  - Add any custom config you want (see notes below)
@@ -45,9 +45,11 @@
 # simply didn't work for me! (old system was being because grub wasnt properly
 # reinstalled)
 
-set -ex -o pipefail
+set -e -o pipefail
 
 makeConf() {
+  # Skip everything if main config already present
+  [[ -e /etc/nixos/configuration.nix ]] && return 0
   # NB <<"EOF" quotes / $ ` in heredocs, <<EOF does not
   mkdir -p /etc/nixos
   local IFS=$'\n'; keys=($(grep -vE '^[[:space:]]*(#|$)' /root/.ssh/authorized_keys))
@@ -200,15 +202,13 @@ checkEnv() {
 
   [[ "$(whoami)" == "root" ]] || { echo "ERROR: Must run as root"; return 1; }
 
-  ( req curl || req wget || echo "ERROR: Missing both curl and wget" ) && \
-  ( req bzcat            || echo "ERROR: Missing bzcat" ) && \
-  ( req perl             || echo "ERROR: Missing perl" ) && \
-  ( req groupadd         || echo "ERROR: Missing groupadd" ) && \
-  ( req useradd          || echo "ERROR: Missing useradd" ) && \
-  ( req ip               || echo "ERROR: Missing ip" ) && \
-  ( req awk              || echo "ERROR: Missing awk" ) && \
-  ( req cut              || echo "ERROR: Missing cut" ) \
-  || return 1
+  req curl || req wget || { echo "ERROR: Missing both curl and wget"; return 1; }
+  req bzcat            || { echo "ERROR: Missing bzcat";              return 1; }
+  req groupadd         || { echo "ERROR: Missing groupadd";           return 1; }
+  req useradd          || { echo "ERROR: Missing useradd";            return 1; }
+  req ip               || { echo "ERROR: Missing ip";                 return 1; }
+  req awk              || { echo "ERROR: Missing awk";                return 1; }
+  req cut              || { echo "ERROR: Missing cut";                return 1; }
 }
 
 infect() {
@@ -247,8 +247,9 @@ infect() {
   echo etc/resolv.conf            >> /etc/NIXOS_LUSTRATE
   echo root/.nix-defexpr/channels >> /etc/NIXOS_LUSTRATE
 
-  rm -rf /boot.bak && mv -v /boot /boot.bak && \
-    /nix/var/nix/profiles/system/bin/switch-to-configuration boot
+  rm -rf /boot.bak
+  mv -v /boot /boot.bak
+  /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
 
 prepareEnv
