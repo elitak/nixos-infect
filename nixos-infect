@@ -145,11 +145,19 @@ EOF
 
 makeSwap() {
   # TODO check currently available swapspace first
-  swapFile=`mktemp`
+  swapFile=`mktemp /tmp/nixos-infect.XXXXX.swp`
   dd if=/dev/zero of=$swapFile bs=1M count=$((1*1024))
   chmod 0600 $swapFile
   mkswap $swapFile
-  swapon $swapFile
+  swapon -v $swapFile
+}
+
+removeSwap() {
+    for swapFile in /tmp/nixos-infect.*.swp
+    do
+        swapoff -v $swapFile
+        rm -vf $swapFile
+    done
 }
 
 prepareEnv() {
@@ -260,4 +268,5 @@ checkEnv
 makeConf
 makeSwap # smallest (512MB) droplet needs extra memory!
 infect
+removeSwap
 reboot
