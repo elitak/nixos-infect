@@ -189,7 +189,7 @@ infect() {
 
   source ~/.nix-profile/etc/profile.d/nix.sh
 
-  [[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-16.09"
+  [[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-17.03"
   nix-channel --remove nixpkgs
   nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
   nix-channel --update

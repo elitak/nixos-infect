@@ -31,7 +31,7 @@ cat and EOF in the Digital Ocean Web UI (or HTTP API):
 #cloud-config
 
 runcmd:
-  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-16.09 bash 2>&1 | tee /tmp/infect.log
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-17.03 bash 2>&1 | tee /tmp/infect.log
 ```
 Potential tweaks:
 - `/etc/nixos/{,hardware-}configuration.nix`: rudimentary mostly static config
