@@ -7,6 +7,8 @@ These are the only supported Digital Ocean images:
 - Ubuntu 16.04 x64
 - Debian 8.5 x64
 
+It has also been successfully tested on OVH Virtual Private Servers (with debian)
+
 YMMV with any other hoster + image combination.
 
 nixos-infect is so named because of the high likelihood of rendering a system

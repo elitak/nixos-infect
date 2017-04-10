@@ -21,7 +21,7 @@ makeConf() {
   networking.hostName = "$(hostname)";
   networking.firewall.allowPing = true;
   services.openssh.enable = true;
-  users.users.root.openssh.authorizedKeys.keys = [$(for key in ${keys[@]}; do echo -n "
+  users.root.openssh.authorizedKeys.keys = [$(for key in ${keys[@]}; do echo -n "
     \"$key\""; done)
   ];
 }
@@ -35,19 +35,36 @@ EOF
   fileSystems."/" = { device = "/dev/${disk}1"; fsType = "ext4"; };
 }
 EOF
-
+  
   # XXX It'd be better if we used procfs for all this...
   local IFS=$'\n'
-  eth0_name=$(ip address show | grep ^2: | awk -F': ' '{print $2}')
-  eth1_name=$(ip address show | grep ^3: | awk -F': ' '{print $2}')
-  eth0_ip4s=($(ip address show dev $eth0_name | grep 'inet '          | sed -r 's|.*inet ([0-9.]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|'))
-  eth0_ip6s=($(ip address show dev $eth0_name | grep 'inet6 .*global' | sed -r 's|.*inet6 ([0-9a-f:]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|' || true))
-  eth1_ip4s=($(ip address show dev $eth1_name | grep 'inet '          | sed -r 's|.*inet ([0-9.]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|' || true))
-  eth1_ip6s=($(ip address show dev $eth1_name | grep 'inet6 .*global' | sed -r 's|.*inet6 ([0-9a-f:]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|' || true))
+  eth0_name=$(ip address show | grep '^2:' | awk -F': ' '{print $2}')
+  eth0_ip4s=($(ip address show dev $eth0_name | grep 'inet ' | sed -r 's|.*inet ([0-9.]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|'))
+  eth0_ip6s=($(ip address show dev $eth0_name | grep 'inet6 ' | sed -r 's|.*inet6 ([0-9a-f:]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|' || ''))
   gateway=($(ip route show dev $eth0_name | grep default | sed -r 's|default via ([0-9.]+).*|\1|'))
-  gateway6=($(ip -6 route show dev $eth0_name | grep default | sed -r 's|default via ([0-9a-f:]+).*|\1|' || true))
   ether0=($(ip address show dev $eth0_name | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|'))
-  ether1=($(ip address show dev $eth1_name | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|'))
+
+  eth1_name=$(ip address show | grep '^3:' | awk -F': ' '{print $2}')||true
+  if [ -n "$eth1_name" ];then
+    eth1_ip4s=($(ip address show dev $eth1_name | grep 'inet ' | sed -r 's|.*inet ([0-9.]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|'))
+    eth1_ip6s=($(ip address show dev $eth1_name | grep 'inet6 ' | sed -r 's|.*inet6 ([0-9a-f:]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|' || ''))
+    ether1=($(ip address show dev $eth1_name | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|'))
+    gateway6=($(ip -6 route show dev $eth1_name | grep default | sed -r 's|default via ([0-9a-f:]+).*|\1|' || true))
+    interfaces1=<< EOF
+      $eth1_name = {
+        ip4 = [$(for a in ${eth1_ip4s[@]}; do echo -n "
+          $a"; done)
+        ];
+        ip6 = [$(for a in ${eth1_ip6s[@]}; do echo -n "
+          $a"; done)
+        ];
+EOF
+    extraRules1="ATTR{address}==\"${ether1}\", NAME=\"eth0\""
+  else
+    interfaces1=""
+    extraRules1=""
+  fi
+
   nameservers=($(grep ^nameserver /etc/resolv.conf | cut -f2 -d' '))
 
   cat > /etc/nixos/networking.nix << EOF
@@ -61,27 +78,20 @@ EOF
     defaultGateway = "${gateway}";
     defaultGateway6 = "${gateway6}";
     interfaces = {
-      eth0 = {
+      $eth0_name = {
         ip4 = [$(for a in ${eth0_ip4s[@]}; do echo -n "
           $a"; done)
         ];
-        ip6 = [$(for a in ${eth1_ip6s[@]}; do echo -n "
+        ip6 = [$(for a in ${eth0_ip6s[@]}; do echo -n "
           $a"; done)
         ];
       };
-      eth1 = {
-        ip4 = [$(for a in ${eth1_ip4s[@]}; do echo -n "
-          $a"; done)
-        ];
-        ip6 = [$(for a in ${eth1_ip6s[@]}; do echo -n "
-          $a"; done)
-        ];
-      };
+      $interfaces1
     };
   };
   services.udev.extraRules = ''
     ATTR{address}=="${ether0}", NAME="eth0"
-    ATTR{address}=="${ether1}", NAME="eth1"
+    $extraRules1
   '';
 }
 EOF
@@ -163,7 +173,9 @@ req() {
 checkEnv() {
   # Perform some easy fixups before checking
   which dnf && dnf install -y perl-Digest-SHA # Fedora 24
-  which bzcat || (which yum && yum install -y bzip2) # CentOS
+  which bzcat || (which yum && yum install -y bzip2) \
+              || (which apt-get && apt-get install bzip2) \
+              || true 
 
   [[ "$(whoami)" == "root" ]] || { echo "ERROR: Must run as root"; return 1; }
 
