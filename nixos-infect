@@ -21,7 +21,7 @@ makeConf() {
   networking.hostName = "$(hostname)";
   networking.firewall.allowPing = true;
   services.openssh.enable = true;
-  users.root.openssh.authorizedKeys.keys = [$(for key in ${keys[@]}; do echo -n "
+  users.users.root.openssh.authorizedKeys.keys = [$(for key in ${keys[@]}; do echo -n "
     \"$key\""; done)
   ];
 }
