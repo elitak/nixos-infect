@@ -163,6 +163,7 @@ prepareEnv() {
 
   # Nix installer tries to use sudo regardless of whether we're already uid 0  
   #which sudo || { sudo() { eval "$@"; }; export -f sudo; }
+  # shellcheck disable=SC2174
   mkdir -p -m 0755 /nix
 }
 
@@ -199,6 +200,7 @@ infect() {
 
   curl https://nixos.org/nix/install | $SHELL
 
+  # shellcheck disable=SC1090
   source ~/.nix-profile/etc/profile.d/nix.sh
 
   [[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-17.03"
