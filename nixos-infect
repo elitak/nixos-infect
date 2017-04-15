@@ -21,7 +21,7 @@ makeConf() {
   networking.hostName = "$(hostname)";
   networking.firewall.allowPing = true;
   services.openssh.enable = true;
-  users.users.root.openssh.authorizedKeys.keys = [$(for key in ${keys[@]}; do echo -n "
+  users.users.root.openssh.authorizedKeys.keys = [$(for key in "${keys[@]}"; do echo -n "
     \"$key\""; done)
   ];
 }
@@ -52,10 +52,10 @@ EOF
     gateway6=($(ip -6 route show dev $eth1_name | grep default | sed -r 's|default via ([0-9a-f:]+).*|\1|' || true))
     interfaces1=<< EOF
       $eth1_name = {
-        ip4 = [$(for a in ${eth1_ip4s[@]}; do echo -n "
+        ip4 = [$(for a in "${eth1_ip4s[@]}"; do echo -n "
           $a"; done)
         ];
-        ip6 = [$(for a in ${eth1_ip6s[@]}; do echo -n "
+        ip6 = [$(for a in "${eth1_ip6s[@]}"; do echo -n "
           $a"; done)
         ];
 EOF
@@ -72,17 +72,17 @@ EOF
   # This file was populated at runtime with the networking
   # details gathered from the active system.
   networking = {
-    nameservers = [$(for a in ${nameservers[@]}; do echo -n "
+    nameservers = [$(for a in "${nameservers[@]}"; do echo -n "
       \"$a\""; done)
     ];
     defaultGateway = "${gateway}";
     defaultGateway6 = "${gateway6}";
     interfaces = {
       $eth0_name = {
-        ip4 = [$(for a in ${eth0_ip4s[@]}; do echo -n "
+        ip4 = [$(for a in "${eth0_ip4s[@]}"; do echo -n "
           $a"; done)
         ];
-        ip6 = [$(for a in ${eth0_ip6s[@]}; do echo -n "
+        ip6 = [$(for a in "${eth0_ip6s[@]}"; do echo -n "
           $a"; done)
         ];
       };
