@@ -112,7 +112,7 @@ EOF
 
 makeSwap() {
   # TODO check currently available swapspace first
-  swapFile=`mktemp /tmp/nixos-infect.XXXXX.swp`
+  swapFile=$(mktemp /tmp/nixos-infect.XXXXX.swp)
   dd if=/dev/zero "of=$swapFile" bs=1M count=$((1*1024))
   chmod 0600 "$swapFile"
   mkswap "$swapFile"
