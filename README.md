@@ -40,6 +40,21 @@ Potential tweaks:
 - `/etc/nixos/networking.nix`, networking settings determined at runtime tweak
   if no ipv6, different number of adapters, etc.
 
+```yaml
+#cloud-config
+write_files:
+- path: /etc/nixos/host.nix
+  permissions: '0644'
+  content: |
+    {pkgs, ...}:
+    {
+      environment.systemPackages = with pkgs; [ vim ];
+    }
+runcmd:
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-17.03 bash 2>&1 | tee /tmp/infect.log
+
+```
+
 Motivation for this script: nixos-assimilate should supplant this script
 entirely, if it's ever completed. nixos-in-place was quite broken when I
 tried it, and also took a pretty janky approach that was substantially more

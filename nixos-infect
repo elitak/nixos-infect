@@ -15,6 +15,7 @@ makeConf() {
   imports = [
     ./hardware-configuration.nix
     ./networking.nix # generated at runtime by nixos-infect
+    $NIXOS_IMPORT
   ];
 
   boot.cleanTmpDir = true;
