@@ -60,7 +60,7 @@ EOF
           $a"; done)
         ];
 EOF
-    extraRules1="ATTR{address}==\"${ether1}\", NAME=\"eth0\""
+    extraRules1="ATTR{address}==\"${ether1}\", NAME=\"${eth1_name}\""
   else
     interfaces1=""
     extraRules1=""
