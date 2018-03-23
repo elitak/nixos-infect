@@ -53,10 +53,10 @@ EOF
     gateway6=$(ip -6 route show dev "$eth1_name" | grep default | sed -r 's|default via ([0-9a-f:]+).*|\1|' || true)
     interfaces1=<< EOF
       $eth1_name = {
-        ip4 = [$(for a in "${eth1_ip4s[@]}"; do echo -n "
+        ipv4.addresses = [$(for a in "${eth1_ip4s[@]}"; do echo -n "
           $a"; done)
         ];
-        ip6 = [$(for a in "${eth1_ip6s[@]}"; do echo -n "
+        ipv6.addresses = [$(for a in "${eth1_ip6s[@]}"; do echo -n "
           $a"; done)
         ];
 EOF
