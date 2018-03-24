@@ -5,7 +5,6 @@ These are the only supported Digital Ocean images:
 
 - Fedora 24 x64
 - Ubuntu 16.04 x64
-- Debian 8.5 x64
 
 It has also been successfully tested on OVH Virtual Private Servers (with debian)
 
@@ -33,7 +32,7 @@ cat and EOF in the Digital Ocean Web UI (or HTTP API):
 #cloud-config
 
 runcmd:
-  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-17.03 bash 2>&1 | tee /tmp/infect.log
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-17.09 bash 2>&1 | tee /tmp/infect.log
 ```
 Potential tweaks:
 - `/etc/nixos/{,hardware-}configuration.nix`: rudimentary mostly static config
