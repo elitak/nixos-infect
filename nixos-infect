@@ -78,6 +78,7 @@ EOF
     ];
     defaultGateway = "${gateway}";
     defaultGateway6 = "${gateway6}";
+    dhcpcd.enable = false;
     interfaces = {
       $eth0_name = {
         ipv4.addresses = [$(for a in "${eth0_ip4s[@]}"; do echo -n "
