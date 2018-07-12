@@ -60,16 +60,20 @@ EOF
           $a"; done)
         ];
 EOF
-    extraRules1="ATTR{address}==\"${ether1}\", NAME=\"eth0\""
+    extraRules1="ATTR{address}==\"${ether1}\", NAME=\"${eth1_name}\""
   else
     interfaces1=""
     extraRules1=""
   fi
 
   nameservers=($(grep ^nameserver /etc/resolv.conf | cut -f2 -d' '))
-
+  if [ "$eth0_name" = eth* ]; then
+    predictable_inames="usePredictableInterfaceNames = lib.mkForce false;"
+  else
+    predictable_inames="usePredictableInterfaceNames = lib.mkForce true;"
+  fi
   cat > /etc/nixos/networking.nix << EOF
-{ ... }: {
+{ lib, ... }: {
   # This file was populated at runtime with the networking
   # details gathered from the active system.
   networking = {
@@ -79,6 +83,7 @@ EOF
     defaultGateway = "${gateway}";
     defaultGateway6 = "${gateway6}";
     dhcpcd.enable = false;
+    $predictable_inames
     interfaces = {
       $eth0_name = {
         ipv4.addresses = [$(for a in "${eth0_ip4s[@]}"; do echo -n "
@@ -92,7 +97,7 @@ EOF
     };
   };
   services.udev.extraRules = ''
-    ATTR{address}=="${ether0}", NAME="eth0"
+    ATTR{address}=="${ether0}", NAME="${eth0_name}"
     $extraRules1
   '';
 }
