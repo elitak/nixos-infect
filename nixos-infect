@@ -127,11 +127,8 @@ makeSwap() {
 }
 
 removeSwap() {
-    for swapFile in /tmp/nixos-infect.*.swp
-    do
-        swapoff -v "$swapFile"
-        rm -vf "$swapFile"
-    done
+    swapoff -a
+    rm -vf /tmp/nixos-infect.*.swp
 }
 
 prepareEnv() {
