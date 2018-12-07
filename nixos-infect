@@ -10,11 +10,14 @@ makeConf() {
   # NB <<"EOF" quotes / $ ` in heredocs, <<EOF does not
   mkdir -p /etc/nixos
   local IFS=$'\n'; keys=($(grep -vE '^[[:space:]]*(#|$)' /root/.ssh/authorized_keys))
+  local network_import=""
+
+  [ "$PROVIDER" = "digitalocean" ] && network_import="./networking.nix # generated at runtime by nixos-infect"
   cat > /etc/nixos/configuration.nix << EOF
 { ... }: {
   imports = [
     ./hardware-configuration.nix
-    ./networking.nix # generated at runtime by nixos-infect
+    $network_import
     $NIXOS_IMPORT
   ];
 
@@ -37,6 +40,10 @@ EOF
 }
 EOF
   
+  [ "$PROVIDER" = "digitalocean" ] && makeNetworkingConf
+}
+
+makeNetworkingConf() {
   # XXX It'd be better if we used procfs for all this...
   local IFS=$'\n'
   eth0_name=$(ip address show | grep '^2:' | awk -F': ' '{print $2}')
@@ -237,6 +244,8 @@ infect() {
   mv -v /boot /boot.bak
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
+
+[ -z "$PROVIDER" ] && PROVIDER="digitalocean" # you may also prepend PROVIDER=vultr to your call instead
 
 prepareEnv
 checkEnv

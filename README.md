@@ -1,14 +1,24 @@
-This script aims to install NixOS on Digital Ocean droplets
-(starting from one of the distros that Digital Ocean supports out of the box)
+This script aims to install NixOS on Digital Ocean droplets, Vultr servers, or
+OVH Virtual Private Servers (starting from distros that these services upports
+out of the box)
 
-These are the only supported Digital Ocean images:
+## Source Distros
 
+This script has been tested and can install NixOS from the following source distros:
+
+On Digital Ocean:
 - Fedora 24 x64
 - Ubuntu 16.04 x64
 
-It has also been successfully tested on OVH Virtual Private Servers (with debian)
+On Vultr:
+- Ubuntu 18.10 x64
+
+On OVH Virtual Private Servers (experimental):
+- Debian
 
 YMMV with any other hoster + image combination.
+
+## Considerations
 
 nixos-infect is so named because of the high likelihood of rendering a system
 inoperable. Use with caution and preferably only on newly-provisioned
@@ -19,6 +29,8 @@ runs to completion. Any errors halt execution. It's advised to run with
 `bash -x` to help debug, as often a failed run leaves the system in an
 inconsistent state, requiring a rebuild (in DigitalOcean panel: Droplet
 Settings -> "Destroy" -> "Rebuild from original").
+
+## Digital Ocean
 
 *TO USE:*
 - Add any custom config you want (see notes below)
@@ -32,7 +44,7 @@ cat and EOF in the Digital Ocean Web UI (or HTTP API):
 #cloud-config
 
 runcmd:
-  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-18.09 bash 2>&1 | tee /tmp/infect.log
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIX_CHANNEL=nixos-18.09 bash 2>&1 | tee /tmp/infect.log
 ```
 Potential tweaks:
 - `/etc/nixos/{,hardware-}configuration.nix`: rudimentary mostly static config
@@ -50,9 +62,22 @@ write_files:
       environment.systemPackages = with pkgs; [ vim ];
     }
 runcmd:
-  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-18.09 bash 2>&1 | tee /tmp/infect.log
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-18.09 bash 2>&1 | tee /tmp/infect.log
 
 ```
+
+## Vultr
+
+From a Vultr server, log into the box and invoke the following command:
+
+```bash
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=vultr NIX_CHANNEL=nixos-18.09 bash
+```
+
+(One ought to be able to use a "Startup Script" for this but it seems like the
+installation around the time Nix gets installed for some reason.)
+
+## Motivation
 
 Motivation for this script: nixos-assimilate should supplant this script
 entirely, if it's ever completed. nixos-in-place was quite broken when I
