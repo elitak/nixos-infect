@@ -68,14 +68,15 @@ runcmd:
 
 ## Vultr
 
-From a Vultr server, log into the box and invoke the following command:
+To set up a NixOS Vultr server, instantiate an Ubuntu box with the following "Startup Script":
 
 ```bash
+#!/bin/sh
+
 curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=vultr NIX_CHANNEL=nixos-18.09 bash
 ```
 
-(One ought to be able to use a "Startup Script" for this but it seems like the
-installation around the time Nix gets installed for some reason.)
+Allow for a few minutes over the usual Ubuntu deployment time for NixOS to download & install itself.
 
 ## Motivation
 
