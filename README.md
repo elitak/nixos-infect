@@ -18,6 +18,8 @@ On OVH Virtual Private Servers (experimental):
 
 YMMV with any other hoster + image combination.
 
+If you have a OpenVZ based virtualization solution then this, or any other OS takeover script will not work, this is fundamental to how OpenVZ works.
+
 ## Considerations
 
 nixos-infect is so named because of the high likelihood of rendering a system
