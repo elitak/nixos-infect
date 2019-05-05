@@ -258,4 +258,7 @@ makeConf
 makeSwap # smallest (512MB) droplet needs extra memory!
 infect
 removeSwap
-[[ -z "$NO_REBOOT" ]] && reboot
+
+if [[ -z "$NO_REBOOT" ]]; then
+  reboot
+fi
