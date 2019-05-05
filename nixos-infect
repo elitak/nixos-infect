@@ -39,7 +39,7 @@ EOF
   fileSystems."/" = { device = "/dev/${disk}1"; fsType = "ext4"; };
 }
 EOF
-  
+
   if [ "$PROVIDER" = "digitalocean" ]
   then
     makeNetworkingConf
@@ -177,7 +177,7 @@ prepareEnv() {
       )"
     }; export -f curl; }
 
-  # Nix installer tries to use sudo regardless of whether we're already uid 0  
+  # Nix installer tries to use sudo regardless of whether we're already uid 0
   #which sudo || { sudo() { eval "$@"; }; export -f sudo; }
   # shellcheck disable=SC2174
   mkdir -p -m 0755 /nix
@@ -192,7 +192,7 @@ checkEnv() {
   which dnf && dnf install -y perl-Digest-SHA # Fedora 24
   which bzcat || (which yum && yum install -y bzip2) \
               || (which apt-get && apt-get install bzip2) \
-              || true 
+              || true
 
   [[ "$(whoami)" == "root" ]] || { echo "ERROR: Must run as root"; return 1; }
 
@@ -258,4 +258,7 @@ makeConf
 makeSwap # smallest (512MB) droplet needs extra memory!
 infect
 removeSwap
-[[ -z "$NO_REBOOT" ]] && reboot
+
+if [[ -z "$NO_REBOOT" ]]; then
+  reboot
+fi
