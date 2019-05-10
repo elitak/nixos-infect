@@ -253,9 +253,9 @@ infect() {
 [ -z "$PROVIDER" ] && PROVIDER="digitalocean" # you may also prepend PROVIDER=vultr to your call instead
 
 prepareEnv
+makeSwap # smallest (512MB) droplet needs extra memory!
 checkEnv
 makeConf
-makeSwap # smallest (512MB) droplet needs extra memory!
 infect
 removeSwap
 
