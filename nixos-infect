@@ -9,7 +9,8 @@ makeConf() {
   [[ -e /etc/nixos/configuration.nix ]] && return 0
   # NB <<"EOF" quotes / $ ` in heredocs, <<EOF does not
   mkdir -p /etc/nixos
-  local IFS=$'\n'; keys=($(grep -vE '^[[:space:]]*(#|$)' /root/.ssh/authorized_keys))
+  # Prevent grep for sending error code 1 (and halting execution) when no lines are selected : https://www.unix.com/man-page/posix/1P/grep
+  local IFS=$'\n'; keys=($(grep -vE '^[[:space:]]*(#|$)' /root/.ssh/authorized_keys || [[ $? == 1 ]])) 
   local network_import=""
 
   [ "$PROVIDER" = "digitalocean" ] && network_import="./networking.nix # generated at runtime by nixos-infect"
@@ -191,7 +192,7 @@ checkEnv() {
   # Perform some easy fixups before checking
   which dnf && dnf install -y perl-Digest-SHA # Fedora 24
   which bzcat || (which yum && yum install -y bzip2) \
-              || (which apt-get && apt-get install bzip2) \
+              || (which apt-get && apt-get update && apt-get install -y bzip2) \
               || true
 
   [[ "$(whoami)" == "root" ]] || { echo "ERROR: Must run as root"; return 1; }
