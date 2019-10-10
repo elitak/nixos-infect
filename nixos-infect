@@ -105,6 +105,8 @@ EOF
         ipv6.addresses = [$(for a in "${eth0_ip6s[@]}"; do echo -n "
           $a"; done)
         ];
+        ipv4.routes = [ { address = "${gateway}"; prefixLength = 32; } ];
+        ipv6.routes = [ { address = "${gateway6}"; prefixLength = 32; } ];
       };
       $interfaces1
     };
