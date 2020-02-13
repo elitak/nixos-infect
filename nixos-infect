@@ -36,8 +36,8 @@ EOF
 { ... }:
 {
   imports = [ <nixpkgs/nixos/modules/profiles/qemu-guest.nix> ];
-  boot.loader.grub.device = "/dev/$disk";
-  fileSystems."/" = { device = "/dev/${disk}1"; fsType = "ext4"; };
+  boot.loader.grub.device = "$grubdev";
+  fileSystems."/" = { device = "$rootfsdev"; fsType = "ext4"; };
 }
 EOF
 
@@ -147,8 +147,12 @@ removeSwap() {
 }
 
 prepareEnv() {
-  # $disk is used in makeConf()
-  for disk in vda sda; do [[ -e /dev/$disk ]] && break; done
+  # $grubdev is used in makeConf()
+  for grubdev in /dev/vda /dev/sda; do [[ -e $grubdev ]] && break; done
+
+  # Retrieve root fs block device
+  #                   (get root mount)  (get partition or logical volume)
+  rootfsdev=$(mount | grep "on / type" | awk '{print $1;}')
 
   # DigitalOcean doesn't seem to set USER while running user data
   export USER="root"
