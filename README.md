@@ -1,6 +1,6 @@
 This script aims to install NixOS on Digital Ocean droplets, Vultr servers, or
-OVH Virtual Private Servers (starting from distros that these services upports
-out of the box)
+OVH Virtual Private Servers (starting from distros that these services support
+out of the box).
 
 ## Source Distros
 
@@ -37,7 +37,7 @@ Settings -> "Destroy" -> "Rebuild from original").
 *TO USE:*
 - Add any custom config you want (see notes below)
 - Deploy the droplet indicated at the top of the file, enable ipv6, add your ssh key
-- cat customConfig.optional nixos-infect | ssh root@targethost
+- `cat customConfig.optional nixos-infect | ssh root@targethost`
 
 Alternatively, use the user data mechamism by supplying the lines between the following
 cat and EOF in the Digital Ocean Web UI (or HTTP API):
