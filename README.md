@@ -16,6 +16,9 @@ On Vultr:
 On OVH Virtual Private Servers (experimental):
 - Debian
 
+On Hetzner cloud:
+- Ubuntu 18.04 (Specify the `PROVIDER` as `digitalocean`)
+
 YMMV with any other hoster + image combination.
 
 If you have a OpenVZ based virtualization solution then this, or any other OS takeover script will not work, this is fundamental to how OpenVZ works.
