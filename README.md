@@ -17,7 +17,7 @@ On OVH Virtual Private Servers (experimental):
 - Debian
 
 On Hetzner cloud:
-- Ubuntu 18.04 (Specify the `PROVIDER` as `digitalocean`)
+- Ubuntu 18.04
 
 YMMV with any other hoster + image combination.
 
@@ -82,6 +82,16 @@ curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect |
 ```
 
 Allow for a few minutes over the usual Ubuntu deployment time for NixOS to download & install itself.
+
+## Hetzner cloud
+
+We need to replace our nameserver to point to the dedicated Hetzner DNS as opposed to `127.0.0.1:53` which is specific to Ubuntu.
+
+```
+sed -i "/nameserver/d" /etc/resolv.conf
+echo "nameserver 213.133.98.98" >> /etc/resolv.conf
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-19.09 bash 2>&1 | tee /tmp/infect.log
+```
 
 ## Motivation
 
