@@ -163,8 +163,15 @@ prepareEnv() {
   export USER="root"
   export HOME="/root"
 
+  # Nix installer tries to use sudo regardless of whether we're already uid 0
+  #which sudo || { sudo() { eval "$@"; }; export -f sudo; }
+  # shellcheck disable=SC2174
+  mkdir -p -m 0755 /nix
+}
+
+fakeCurlUsingWget() {
   # Use adapted wget if curl is missing
-  which curl || { \
+  which wget && { \
     curl() {
       eval "wget $(
         (local isStdout=1
@@ -188,11 +195,6 @@ prepareEnv() {
         )| tr '\n' ' '
       )"
     }; export -f curl; }
-
-  # Nix installer tries to use sudo regardless of whether we're already uid 0
-  #which sudo || { sudo() { eval "$@"; }; export -f sudo; }
-  # shellcheck disable=SC2174
-  mkdir -p -m 0755 /nix
 }
 
 req() {
@@ -201,9 +203,13 @@ req() {
 
 checkEnv() {
   # Perform some easy fixups before checking
+  # TODO prevent multiple calls to apt-get update
   which dnf && dnf install -y perl-Digest-SHA # Fedora 24
   which bzcat || (which yum && yum install -y bzip2) \
               || (which apt-get && apt-get update && apt-get install -y bzip2) \
+              || true
+  which curl  || fakeCurlUsingWget \
+              || (which apt-get && apt-get update && apt-get install -y curl) \
               || true
 
   [[ "$(whoami)" == "root" ]] || { echo "ERROR: Must run as root"; return 1; }
