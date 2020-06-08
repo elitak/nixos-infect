@@ -1,0 +1,37 @@
+repository:
+  name: holo-hydra-create
+  description: Installation script for Holo Hydra on Digital Ocean droplet
+  topics: nix, nixos, hydra
+  private: false
+  has_issues: true
+  has_projects: false
+  has_wiki: false
+  default_branch: masrter
+  allow_merge_commit: true
+  allow_squash_merge: false
+  allow_rebase_merge: false
+
+collaborators: []
+
+teams:
+  - name: central
+    permission: push
+  - name: hydra
+    permission: push
+
+branches:
+  - name: master
+    protection:
+      required_pull_request_reviews:
+        required_approving_review_count: 2
+        dismiss_stale_reviews: true
+        require_code_owner_reviews: true
+        dismissal_restrictions:
+          users: []
+          teams: []
+      enforce_admins: true
+      restrictions:
+        users:
+          - peeech
+          - filalex77
+        teams: []
