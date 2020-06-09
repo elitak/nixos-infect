@@ -1,10 +1,10 @@
 #! /usr/bin/env bash
 
-# More info at: https://github.com/elitak/nixos-infect
-
 set -e -o pipefail
 
 makeConf() {
+  # exit if keystore not found
+  [[ -e ./keystore ]] && { echo "ERROR: Missing keystore file"; return 1; }
   # Skip everything if main config already present
   [[ -e /etc/nixos/configuration.nix ]] && return 0
   # NB <<"EOF" quotes / $ ` in heredocs, <<EOF does not
@@ -24,7 +24,7 @@ makeConf() {
   imports = [
     ./hardware-configuration.nix
     $network_import
-    $NIXOS_IMPORT
+    <holo-nixpkgs/profiles/logical/holo/hydra/master>
   ];
 
   boot.cleanTmpDir = true;
@@ -237,9 +237,9 @@ infect() {
   # shellcheck disable=SC1090
   source ~/.nix-profile/etc/profile.d/nix.sh
 
-  [[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-19.09"
   nix-channel --remove nixpkgs
   nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
+  nix-channel --add https://hydra.holo.host/channel/custom/holo-nixpkgs/hydra/holo-nixpkgs
   nix-channel --update
 
   export NIXOS_CONFIG=/etc/nixos/configuration.nix
@@ -268,7 +268,8 @@ infect() {
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
 
-[ -z "$PROVIDER" ] && PROVIDER="digitalocean" # you may also prepend PROVIDER=vultr to your call instead
+[ -z "$PROVIDER" ] && PROVIDER="digitalocean"
+[[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-19.09"
 
 prepareEnv
 makeSwap # smallest (512MB) droplet needs extra memory!
