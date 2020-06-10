@@ -1,0 +1,80 @@
+#! /usr/bin/env bash
+
+set -e -o pipefail
+
+checkEnv() {
+  [[ "$(whoami)" == "root" ]]       || { echo "ERROR: Must run as root";                          return 1; }
+  # exit if keystore not found
+  [[ -e ./keystore ]]               || { echo "ERROR: Missing keystore file";                     return 1; }
+  source ./keystore
+  [[ -z "$YOUR_GITHUB_TOKEN" ]]     && { echo "ERROR: Missing YOUR_GITHUB_TOKEN in keystore";     return 1; }
+  [[ -z "$BINARY_CACHE_PUBKEY" ]]   && { echo "ERROR: Missing BINARY_CACHE_PUBKEY in keystore";   return 1; }
+  [[ -z "$BINARY_CACHE_SECRET" ]]   && { echo "ERROR: Missing BINARY_CACHE_SECRET in keystore";   return 1; }
+  [[ -z "$AWS_ACCESS_KEY_ID" ]]     && { echo "ERROR: Missing AWS_ACCESS_KEY_ID in keystore";     return 1; }
+  [[ -z "$AWS_SECRET_ACCESS_KEY" ]] && { echo "ERROR: Missing AWS_SECRET_ACCESS_KEY in keystore"; return 1; }
+  [[ -z "$MINIONS_ED25519_PUB" ]]   && { echo "ERROR: Missing MINIONS_ED25519_PUB in keystore";   return 1; }
+  [[ -z "$MINIONS_ED25519_PRIV" ]]  && { echo "ERROR: Missing MINIONS_ED25519_PRIV in keystore";  return 1; }
+  return 0
+}
+
+setupKeys() {
+  setupGithubKey
+  setupCacheKey
+  setupAwsCredentials
+  setupMinionKeys
+}
+
+setupGithubKey() {
+  local authdir=/var/lib/hydra/github-authorization
+  local owner=Holo-Host
+  mkdir -p $authdir
+  echo "token $YOUR_GITHUB_TOKEN" > $authdir/$owner
+}
+
+setupCacheKey() {
+  local keydir=/var/lib/hydra/queue-runner/keys/cache.holo.host-2
+  sudo -i -u hydra-queue-runner bash << EOF
+    mkdir -p $keydir
+    echo "$BINARY_CACHE_PUBKEY" > $keydir/public
+    echo "$BINARY_CACHE_SECRET" > $keydir/secret
+EOF
+}
+
+setupAwsCredentials() {
+  local awsdir=/var/lib/hydra/queue-runner/.aws
+  local string="[default]"$'\n'"aws_access_key_id = $AWS_ACCESS_KEY_ID"$'\n'"aws_secret_access_key = $AWS_SECRET_ACCESS_KEY"$'\n'
+  sudo -i -u hydra-queue-runner bash << EOF
+    mkdir -p $awsdir
+    echo "$string" > $awsdir/credentials
+EOF
+}
+
+setupMinionKeys() {
+  local sshdir=/var/lib/hydra/queue-runner/.ssh
+  sudo -i -u hydra-queue-runner bash << EOF
+    mkdir -p $sshdir
+    echo "$MINIONS_ED25519_PUB" > $sshdir/id_ed25519.pub
+    echo "$MINIONS_ED25519_PRIV" > $sshdir/id_ed25519
+    chmod 600 $sshdir/id_ed25519.pub
+    chmod 600 $sshdir/id_ed25519
+EOF
+}
+
+# TODO: fetch hydra.bak from backup location
+restoreDB() {
+  systemctl stop hydra-evaluator.service
+  sudo -i -u postgres bash << EOF
+    dropdb hydra
+    createdb hydra
+    psql hydra < /tmp/hydra.bak
+EOF
+  systemctl start hydra-evaluator.service
+}
+
+checkEnv
+setupKeys
+restoreDB
+
+echo "Erasing keystore..."
+# echo "byebye" > keystore && rm keystore
+echo "Hydra restored from backup successfully"
