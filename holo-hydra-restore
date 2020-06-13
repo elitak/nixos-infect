@@ -81,5 +81,5 @@ setupKeys
 restoreDB
 
 echo "Erasing keystore..."
-# echo "byebye" > keystore && rm keystore
+echo "byebye" > keystore && rm keystore
 echo "Hydra restored from backup successfully"
