@@ -1,12 +1,13 @@
 #! /usr/bin/env bash
 
-set -e -o pipefail
+set -a -e -o pipefail
 
 checkEnv() {
   [[ "$(whoami)" == "root" ]]       || { echo "ERROR: Must run as root";                          return 1; }
   # exit if keystore not found
   [[ -e ./keystore ]]               || { echo "ERROR: Missing keystore file";                     return 1; }
   source ./keystore
+  [[ -z "$RESTIC_PASSWORD" ]]       && { echo "ERROR: Missing RESTIC_PASSWORD in keystore";       return 1; }
   [[ -z "$YOUR_GITHUB_TOKEN" ]]     && { echo "ERROR: Missing YOUR_GITHUB_TOKEN in keystore";     return 1; }
   [[ -z "$BINARY_CACHE_PUBKEY" ]]   && { echo "ERROR: Missing BINARY_CACHE_PUBKEY in keystore";   return 1; }
   [[ -z "$BINARY_CACHE_SECRET" ]]   && { echo "ERROR: Missing BINARY_CACHE_SECRET in keystore";   return 1; }
@@ -63,13 +64,17 @@ EOF
 # TODO: fetch hydra.bak from backup location
 restoreDB() {
   systemctl stop hydra-evaluator.service
-  sudo -i -u postgres bash << EOF
+  # here sudo -E is required to preserve vars exported with `set -a`
+  sudo -E -u postgres bash << EOF
+    set -o pipefail
     dropdb hydra
     createdb hydra
-    psql hydra < /tmp/hydra.bak
+    restic dump latest hydra-master.bak | psql hydra
 EOF
   systemctl start hydra-evaluator.service
 }
+
+RESTIC_REPOSITORY="s3:https://s3.wasabisys.com/holo-hydra-backup"
 
 checkEnv
 setupKeys
