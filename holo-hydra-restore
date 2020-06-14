@@ -52,8 +52,10 @@ setupGithubKey() {
   echo -n "Importing github authorization token "
   local authdir=/var/lib/hydra/github-authorization
   local owner=Holo-Host
-  mkdir -p $authdir
-  echo "token $YOUR_GITHUB_TOKEN" > $authdir/$owner
+  sudo -i -u hydra bash << EOF
+    mkdir -p $authdir
+    echo "token $YOUR_GITHUB_TOKEN" > $authdir/$owner
+EOF
   pc
 }
 
