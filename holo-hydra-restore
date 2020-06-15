@@ -97,13 +97,7 @@ EOF
 restoreDB() {
   echo "Restoring hydra state database..."
   systemctl stop hydra-evaluator.service
-  # here sudo -E is required to preserve vars exported with `set -a`
-  sudo -E -u postgres bash << EOF
-    set -o pipefail
-    dropdb hydra
-    createdb hydra
-    restic dump latest hydra-master.bak --no-cache | psql hydra 1>/dev/null
-EOF
+  restic dump latest hydra-master.bak --no-cache | psql -U hydra hydra 1>/dev/null
   systemctl start hydra-evaluator.service
   echo -n "Database restored "
   pc
