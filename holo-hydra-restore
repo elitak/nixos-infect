@@ -1,0 +1,122 @@
+#! /usr/bin/env bash
+
+set -a -e -o pipefail
+
+pc() {
+  echo -e "\xE2\x9C\x94"
+}
+
+confirmProceed() {
+  echo "**********************************************************************" 
+  echo "*** Restoring hydra-master from backup and setting up credentials. ***"
+  echo "*** Requires hydra-keystore.enc file in current dir.               ***"
+  echo "***                                                                ***"
+  echo "*** WARNING: if you continue current state of Hydra will be erased ***"
+  echo "*** and overwritten with settings from backup.                     ***" 
+  echo "**********************************************************************"
+  echo ""
+  read -p "Are you sure you want to continue? <y/N>" prompt
+  [[ $prompt == "y" || $prompt == "Y" ]] || { echo "Aborting.";                                     return 1; }
+}
+
+checkEnv() {
+  [[ "$(whoami)" == "root" ]]       || { echo "ERROR: Must run as root";                          return 1; }
+  echo "Reading hydra-keystore..."
+  # exit if keystore not found
+  [[ -e ./hydra-keystore.enc ]]     || { echo "ERROR: Missing hydra-keystore.enc file";           return 1; }
+  read -p 'Password: ' passvar
+  openssl enc -aes-256-cbc -d -in hydra-keystore.enc -k $passvar 2>/dev/null 1>hydra-keystore \
+                                    || { echo "ERROR: Can't decrypt hydra-keystore. Wrong password?";              return 1; }
+  echo -n "Hydra-keystore decrypted successfully "
+  pc
+  source ./hydra-keystore
+  [[ -z "$RESTIC_PASSWORD" ]]       && { echo "ERROR: Missing RESTIC_PASSWORD in keystore";       return 1; }
+  [[ -z "$YOUR_GITHUB_TOKEN" ]]     && { echo "ERROR: Missing YOUR_GITHUB_TOKEN in keystore";     return 1; }
+  [[ -z "$BINARY_CACHE_PUBKEY" ]]   && { echo "ERROR: Missing BINARY_CACHE_PUBKEY in keystore";   return 1; }
+  [[ -z "$BINARY_CACHE_SECRET" ]]   && { echo "ERROR: Missing BINARY_CACHE_SECRET in keystore";   return 1; }
+  [[ -z "$AWS_ACCESS_KEY_ID" ]]     && { echo "ERROR: Missing AWS_ACCESS_KEY_ID in keystore";     return 1; }
+  [[ -z "$AWS_SECRET_ACCESS_KEY" ]] && { echo "ERROR: Missing AWS_SECRET_ACCESS_KEY in keystore"; return 1; }
+  [[ -z "$MINIONS_ED25519_PUB" ]]   && { echo "ERROR: Missing MINIONS_ED25519_PUB in keystore";   return 1; }
+  [[ -z "$MINIONS_ED25519_PRIV" ]]  && { echo "ERROR: Missing MINIONS_ED25519_PRIV in keystore";  return 1; }
+  return 0
+}
+
+setupKeys() {
+  setupGithubKey
+  setupCacheKey
+  setupAwsCredentials
+  setupMinionKeys
+}
+
+setupGithubKey() {
+  echo -n "Importing github authorization token "
+  local authdir=/var/lib/hydra/github-authorization
+  local owner=Holo-Host
+  sudo -i -u hydra bash << EOF
+    mkdir -p $authdir
+    echo "token $YOUR_GITHUB_TOKEN" > $authdir/$owner
+EOF
+  pc
+}
+
+setupCacheKey() {
+  echo -n "Importing cache signing key "
+  local keydir=/var/lib/hydra/queue-runner/keys/cache.holo.host-2
+  sudo -i -u hydra-queue-runner bash << EOF
+    mkdir -p $keydir
+    echo "$BINARY_CACHE_PUBKEY" > $keydir/public
+    echo "$BINARY_CACHE_SECRET" > $keydir/secret
+EOF
+  pc
+}
+
+setupAwsCredentials() {
+  echo -n "Importing wasabi access credentials "
+  local awsdir=/var/lib/hydra/queue-runner/.aws
+  local string="[default]"$'\n'"aws_access_key_id = $AWS_ACCESS_KEY_ID"$'\n'"aws_secret_access_key = $AWS_SECRET_ACCESS_KEY"$'\n'
+  sudo -i -u hydra-queue-runner bash << EOF
+    mkdir -p $awsdir
+    echo "$string" > $awsdir/credentials
+EOF
+  pc
+}
+
+setupMinionKeys() {
+  echo -n "Importing minions ssh access key "
+  local sshdir=/var/lib/hydra/queue-runner/.ssh
+  sudo -i -u hydra-queue-runner bash << EOF
+    mkdir -p $sshdir
+    echo "$MINIONS_ED25519_PUB" > $sshdir/id_ed25519.pub
+    echo "$MINIONS_ED25519_PRIV" > $sshdir/id_ed25519
+    chmod 600 $sshdir/id_ed25519.pub
+    chmod 600 $sshdir/id_ed25519
+EOF
+  pc
+}
+
+restoreDB() {
+  echo "Restoring hydra state database..."
+  systemctl stop hydra-evaluator.service
+  # here sudo -E is required to preserve vars exported with `set -a`
+  sudo -E -u postgres bash << EOF
+    set -o pipefail
+    dropdb hydra
+    createdb hydra
+    restic dump latest hydra-master.bak --no-cache | psql hydra 1>/dev/null
+EOF
+  systemctl start hydra-evaluator.service
+  echo -n "Database restored "
+  pc
+}
+
+RESTIC_REPOSITORY="s3:https://s3.wasabisys.com/holo-hydra-backup"
+
+confirmProceed
+checkEnv
+setupKeys
+restoreDB
+
+echo -n "Erasing hydra-keystore "
+echo "byebye" > hydra-keystore && rm hydra-keystore
+pc
+echo "Hydra restored from backup successfully"

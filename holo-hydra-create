@@ -1,7 +1,5 @@
 #! /usr/bin/env bash
 
-# More info at: https://github.com/elitak/nixos-infect
-
 set -e -o pipefail
 
 makeConf() {
@@ -24,7 +22,7 @@ makeConf() {
   imports = [
     ./hardware-configuration.nix
     $network_import
-    $NIXOS_IMPORT
+    <holo-nixpkgs/profiles/logical/holo/hydra/master>
   ];
 
   boot.cleanTmpDir = true;
@@ -237,9 +235,10 @@ infect() {
   # shellcheck disable=SC1090
   source ~/.nix-profile/etc/profile.d/nix.sh
 
-  [[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-19.09"
   nix-channel --remove nixpkgs
   nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
+  # TODO: switch from develop to hydra channel
+  nix-channel --add https://hydra.holo.host/channel/custom/holo-nixpkgs/develop/holo-nixpkgs
   nix-channel --update
 
   export NIXOS_CONFIG=/etc/nixos/configuration.nix
@@ -268,7 +267,8 @@ infect() {
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
 
-[ -z "$PROVIDER" ] && PROVIDER="digitalocean" # you may also prepend PROVIDER=vultr to your call instead
+[[ -z "$PROVIDER" ]]    && PROVIDER="digitalocean"
+[[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-19.09"
 
 prepareEnv
 makeSwap # smallest (512MB) droplet needs extra memory!
@@ -276,6 +276,9 @@ checkEnv
 makeConf
 infect
 removeSwap
+
+echo "SUCCESS: Hydra server has been set up succesfully"
+echo "Rebooting into empty Hydra, make sure to run holo-hydra-restore"
 
 if [[ -z "$NO_REBOOT" ]]; then
   reboot
