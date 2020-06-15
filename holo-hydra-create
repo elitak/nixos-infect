@@ -38,6 +38,7 @@ EOF
   cat > /etc/nixos/hardware-configuration.nix << EOF
 { ... }:
 {
+  imports = [ <nixpkgs/nixos/modules/profiles/qemu-guest.nix> ];
   boot.loader.grub.device = "$grubdev";
   fileSystems."/" = { device = "$rootfsdev"; fsType = "ext4"; };
 }
@@ -235,7 +236,7 @@ infect() {
   source ~/.nix-profile/etc/profile.d/nix.sh
 
   nix-channel --remove nixpkgs
-  nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL"
+  nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
   nix-channel --add https://hydra.holo.host/channel/custom/holo-nixpkgs/hydra/holo-nixpkgs
   nix-channel --update
 
@@ -275,8 +276,8 @@ makeConf
 infect
 removeSwap
 
-echo "SUCCESS: Hydra server has been set up succesfully"
-echo "Rebooting into empty Hydra, make sure to run holo-hydra-restore"
+echo "SUCCESS: Hydra server has been set up successfully"
+echo "Rebooting into empty Hydra, make sure to run holo-hydra-restore after reboot"
 
 if [[ -z "$NO_REBOOT" ]]; then
   reboot
