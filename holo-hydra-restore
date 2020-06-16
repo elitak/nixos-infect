@@ -52,7 +52,7 @@ setupGithubKey() {
   echo -n "Importing github authorization token "
   local authdir=/var/lib/hydra/github-authorization
   local owner=Holo-Host
-  sudo -i -u hydra bash << EOF
+  sudo -u hydra bash << EOF
     mkdir -p $authdir
     echo "token $YOUR_GITHUB_TOKEN" > $authdir/$owner
 EOF
@@ -62,7 +62,7 @@ EOF
 setupCacheKey() {
   echo -n "Importing cache signing key "
   local keydir=/var/lib/hydra/queue-runner/keys/cache.holo.host-2
-  sudo -i -u hydra-queue-runner bash << EOF
+  sudo -u hydra-queue-runner bash << EOF
     mkdir -p $keydir
     echo "$BINARY_CACHE_PUBKEY" > $keydir/public
     echo "$BINARY_CACHE_SECRET" > $keydir/secret
@@ -74,7 +74,7 @@ setupAwsCredentials() {
   echo -n "Importing wasabi access credentials "
   local awsdir=/var/lib/hydra/queue-runner/.aws
   local string="[default]"$'\n'"aws_access_key_id = $AWS_ACCESS_KEY_ID"$'\n'"aws_secret_access_key = $AWS_SECRET_ACCESS_KEY"$'\n'
-  sudo -i -u hydra-queue-runner bash << EOF
+  sudo -u hydra-queue-runner bash << EOF
     mkdir -p $awsdir
     echo "$string" > $awsdir/credentials
 EOF
@@ -84,7 +84,7 @@ EOF
 setupMinionKeys() {
   echo -n "Importing minions ssh access key "
   local sshdir=/var/lib/hydra/queue-runner/.ssh
-  sudo -i -u hydra-queue-runner bash << EOF
+  sudo -u hydra-queue-runner bash << EOF
     mkdir -p $sshdir
     echo "$MINIONS_ED25519_PUB" > $sshdir/id_ed25519.pub
     echo "$MINIONS_ED25519_PRIV" > $sshdir/id_ed25519
