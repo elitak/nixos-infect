@@ -5,7 +5,7 @@ First create new droplet on Digital Ocean with minimum 16GB of RAM and `Ubuntu 1
 
 Ssh into your new droplet. Exec in shell:
 ```bash
-curl https://raw.githubusercontent.com/Holo-Host/holo-hydra-create/master/holo-hydra-create | bash -x 2>&1 | tee /tmp/hydra_config.log
+curl https://raw.githubusercontent.com/Holo-Host/holo-hydra-create/master/holo-hydra-create | bash 2>&1 | tee /tmp/hydra_config.log
 ```
 After successful run system will reboot into newly created empty Hydra.
 
