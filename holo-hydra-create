@@ -230,7 +230,7 @@ infect() {
   #addgroup nixbld -g 30000 || true
   #for i in {1..10}; do adduser -DH -G nixbld nixbld$i || true; done
 
-  curl https://nixos.org/nix/install | $SHELL
+  curl -L https://nixos.org/nix/install | $SHELL
 
   # shellcheck disable=SC1090
   source ~/.nix-profile/etc/profile.d/nix.sh
