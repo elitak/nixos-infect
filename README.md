@@ -22,8 +22,14 @@ holo-hydra-restore
 ```
 and watch terminal output for prompts.
 
+You should see the line `Hydra restored from backup successfully`. From now on wait ~1h for hydra to finish evaluations or watch logs with `journalctl -f -u hydra-evaluator` until evaluations are done. 
+
+## Updating TLS certs
+
+There are two urls served from Hydra server: `hydra.holo.host` and `holoportbuild.holo.host`, both via https. Before you switch DNS to newly created machine make sure to copy content of `/var/lib/acme/hydra.holo.host/` and `/var/lib/acme/holoportbuild.holo.host/` from old working Hydra to the one currently created. Once you copy those make sure to restart `nginx.servce` on new Hydra.
+
 ## Switching DNS
-Once you see the line `Hydra restored from backup successfully` you can wait ~1h for hydra to finish evaluations (or watch logs with `journalctl -f -u hydra-evaluator` until evaluations are done) and the switch `hydra.holo.host` in Cloudflare's DNS to the new Hydra's IP.
+Switch `hydra.holo.host` in Cloudflare's DNS to the new Hydra's IP. `holoportbuild.holo.host` is cnamed to `hydra.holo.host` so there's no need to do anything there.
 
 ## Acknowledgements
 
