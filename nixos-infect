@@ -212,6 +212,9 @@ checkEnv() {
   which bzcat || (which yum && yum install -y bzip2) \
               || (which apt-get && apt-get update && apt-get install -y bzip2) \
               || true
+  which xzcat || (which yum && yum install -y xz-utils) \
+              || (which apt-get && apt-get update && apt-get install -y xz-utils) \
+              || true
   which curl  || fakeCurlUsingWget \
               || (which apt-get && apt-get update && apt-get install -y curl) \
               || true
@@ -220,6 +223,7 @@ checkEnv() {
 
   req curl || req wget || { echo "ERROR: Missing both curl and wget"; return 1; }
   req bzcat            || { echo "ERROR: Missing bzcat";              return 1; }
+  req xzcat            || { echo "ERROR: Missing xzcat";              return 1; }
   req groupadd         || { echo "ERROR: Missing groupadd";           return 1; }
   req useradd          || { echo "ERROR: Missing useradd";            return 1; }
   req ip               || { echo "ERROR: Missing ip";                 return 1; }
