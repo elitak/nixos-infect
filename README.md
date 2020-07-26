@@ -8,7 +8,7 @@ This script has been tested and can install NixOS from the following source dist
 
 On Digital Ocean:
 - Fedora 24 x64
-- Ubuntu 16.04 x64
+- Ubuntu 20.04 x64
 
 On Vultr:
 - Ubuntu 18.10 x64
