@@ -28,8 +28,12 @@ You should see the line `Hydra restored from backup successfully`. From now on w
 
 There are two urls served from Hydra server: `hydra.holo.host` and `holoportbuild.holo.host`, both via https. Before you switch DNS to newly created machine make sure to copy content of `/var/lib/acme/hydra.holo.host/` and `/var/lib/acme/holoportbuild.holo.host/` from old working Hydra to the one currently created. Once you copy those make sure to restart `nginx.servce` on new Hydra.
 
-## Switching DNS
-Switch `hydra.holo.host` in Cloudflare's DNS to the new Hydra's IP. `holoportbuild.holo.host` is cnamed to `hydra.holo.host` so there's no need to do anything there.
+## Switching instances
+DNS entry `hydra.holo.host` and `holoportbuild.holo.host` are both pointing to Load Balancer hosted on Digitalocean under IP `174.138.104.59`. [Load Balancer Console](https://cloud.digitalocean.com/networking/load_balancers/5024c0aa-2e05-4a2e-acce-2d327aaee036/droplets) shows which instance of Hydra is currently receiving traffic. If you need to switch instances do it in this console, by FIRST removing an old droplet and THEN adding a new one.
+
+> IMPORTANT: Hydra-load-balancer can be pointing only to one instance of Hydra at the same time, otherwise Hydra will enter inconsistent state.
+
+A new instance Status will be showing as `Down` for the first 20s, afterwards it will turn to `Healthy`. During that period `hydra.holo.host` will be down.
 
 ## Acknowledgements
 
