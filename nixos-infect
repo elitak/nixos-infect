@@ -18,7 +18,7 @@ makeConf() {
   done
   local network_import=""
 
-  [ "$PROVIDER" = "digitalocean" ] && network_import="./networking.nix # generated at runtime by nixos-infect"
+  [ ! -z "$doNetConf" ] && network_import="./networking.nix # generated at runtime by nixos-infect"
   cat > /etc/nixos/configuration.nix << EOF
 { ... }: {
   imports = [
@@ -46,7 +46,7 @@ EOF
 }
 EOF
 
-  if [ "$PROVIDER" = "digitalocean" ]
+  if [ ! -z "$doNetConf" ]
   then
     makeNetworkingConf
   else
@@ -95,9 +95,7 @@ EOF
   # This file was populated at runtime with the networking
   # details gathered from the active system.
   networking = {
-    nameservers = [$(for a in "${nameservers[@]}"; do echo -n "
-      \"$a\""; done)
-    ];
+    nameservers = [ "8.8.8.8" ];
     defaultGateway = "${gateway}";
     defaultGateway6 = "${gateway6}";
     dhcpcd.enable = false;
@@ -268,7 +266,8 @@ infect() {
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
 
-[ -z "$PROVIDER" ] && PROVIDER="digitalocean" # you may also prepend PROVIDER=vultr to your call instead
+[ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
+
 
 prepareEnv
 makeSwap # smallest (512MB) droplet needs extra memory!
