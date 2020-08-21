@@ -18,7 +18,7 @@ makeConf() {
   done
   local network_import=""
 
-  [ ! -z doNetConf ] && network_import="./networking.nix # generated at runtime by nixos-infect"
+  [ ! -z "$doNetConf" ] && network_import="./networking.nix # generated at runtime by nixos-infect"
   cat > /etc/nixos/configuration.nix << EOF
 { ... }: {
   imports = [
@@ -46,7 +46,7 @@ EOF
 }
 EOF
 
-  if [ ! -z doNetConf ]
+  if [ ! -z "$doNetConf" ]
   then
     makeNetworkingConf
   else
