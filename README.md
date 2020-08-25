@@ -42,8 +42,7 @@ Settings -> "Destroy" -> "Rebuild from original").
 - Deploy the droplet indicated at the top of the file, enable ipv6, add your ssh key
 - `cat customConfig.optional nixos-infect | ssh root@targethost`
 
-Alternatively, use the user data mechamism by supplying the lines between the following
-cat and EOF in the Digital Ocean Web UI (or HTTP API):
+Alternatively, use the user data mechamism by supplying the lines between the following in the Digital Ocean Web UI (or HTTP API):
 
 ```yaml
 #cloud-config
