@@ -11,10 +11,14 @@ After successful run system will reboot into newly created empty Hydra.
 
 ## Restoring configuration
 
-First import a file `hydra-keystore.enc` to server's `~/` dir. The file is encrypted and password protected as it contains all the security credentials required to configure Hydra. It will be securely erased after successful creation of Hydra. The file itself and encryption password can be obtained from Service Ops, or created from `hydra-keystore-template` and encrypted using command:
+First import a file `hydra-keystore.enc` to server's `~/` dir (e.g. use SCP). 
+
+This file is encrypted and password protected as it contains all the security credentials required to configure Hydra. It will be securely erased after successful creation of Hydra. The file itself and encryption password can be obtained from Service Ops, or created from `hydra-keystore-template` and encrypted using command:
 ```
 openssl enc -aes-256-cbc -salt -in hydra-keystore-template -out hydra-keystore.enc
 ```
+
+*Note: If creating a new `hydra-keystore-template` with different credentials, you will likely need the assistance of one of our hydra devops to switch the keys in `holo-nixpkgs`*
 
 Once `hydra-keystore.enc` is in place run 
 ```bash
@@ -22,14 +26,15 @@ holo-hydra-restore
 ```
 and watch terminal output for prompts.
 
-You should see the line `Hydra restored from backup successfully`. From now on wait ~1h for hydra to finish evaluations or watch logs with `journalctl -f -u hydra-evaluator` until evaluations are done. 
+You should see the line `Hydra restored from backup successfully`. From now on wait ~2h for hydra to finish evaluations or watch logs with `journalctl -f -u hydra-evaluator` until evaluations are done. 
 
 ## Updating TLS certs
-
-There are two urls served from Hydra server: `hydra.holo.host` and `holoportbuild.holo.host`, both via https. Before you switch DNS to newly created machine make sure to copy content of `/var/lib/acme/hydra.holo.host/` and `/var/lib/acme/holoportbuild.holo.host/` from old working Hydra to the one currently created. Once you copy those make sure to restart `nginx.servce` on new Hydra.
+Before you switch instances to newly created machine make sure to copy content of `/var/lib/acme/hydra.holo.host/` and `/var/lib/acme/holoportbuild.holo.host/` from old working Hydra to the one currently created. Once you copy those make sure to restart `nginx.servce` on new Hydra.
 
 ## Switching instances
-DNS entry `hydra.holo.host` and `holoportbuild.holo.host` are both pointing to Load Balancer hosted on Digitalocean under IP `174.138.104.59`. [Load Balancer Console](https://cloud.digitalocean.com/networking/load_balancers/5024c0aa-2e05-4a2e-acce-2d327aaee036/droplets) shows which instance of Hydra is currently receiving traffic. If you need to switch instances do it in this console, by FIRST removing an old droplet and THEN adding a new one.
+There are two urls served from Hydra server: `hydra.holo.host` and `holoportbuild.holo.host`, both via https. The DNS entries `hydra.holo.host` and `holoportbuild.holo.host` are both pointing to Load Balancer hosted on Digitalocean under IP `174.138.104.59`. 
+
+[Load Balancer Console](https://cloud.digitalocean.com/networking/load_balancers/5024c0aa-2e05-4a2e-acce-2d327aaee036/droplets) shows which instance of Hydra is currently receiving traffic. If you need to switch instances do it in this console, by FIRST removing an old droplet and THEN adding a new one. Do not reconfigure the DNS to point directly to the new Hydra server.
 
 > IMPORTANT: Hydra-load-balancer can be pointing only to one instance of Hydra at the same time, otherwise Hydra will enter inconsistent state.
 
