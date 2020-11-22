@@ -95,7 +95,9 @@ EOF
   # This file was populated at runtime with the networking
   # details gathered from the active system.
   networking = {
-    nameservers = [ "8.8.8.8" ];
+    nameservers = [$(for a in "${nameservers[@]}"; do echo -n "
+      $a"; done)
+    ];
     defaultGateway = "${gateway}";
     defaultGateway6 = "${gateway6}";
     dhcpcd.enable = false;
