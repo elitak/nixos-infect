@@ -18,7 +18,7 @@ makeConf() {
   done
   local network_import=""
 
-  [ ! -z "$doNetConf" ] && network_import="./networking.nix # generated at runtime by nixos-infect"
+  [[ -n "$doNetConf" ]] && network_import="./networking.nix # generated at runtime by nixos-infect"
   cat > /etc/nixos/configuration.nix << EOF
 { ... }: {
   imports = [
@@ -46,7 +46,7 @@ EOF
 }
 EOF
 
-  if [ ! -z "$doNetConf" ]
+  if [[ -n "$doNetConf" ]]
   then
     makeNetworkingConf
   else
@@ -84,8 +84,12 @@ EOF
     extraRules1=""
   fi
 
-  nameservers=($(grep ^nameserver /etc/resolv.conf | cut -f2 -d' '))
-  if [ "$eth0_name" = eth* ]; then
+  nameservers=()
+  while IFS='' read -r line; do
+    nameservers+=("$line")
+  done < <(grep ^nameserver /etc/resolv.conf | cut -f2 -d' ')
+
+  if [[ "$eth0_name" = eth* ]]; then
     predictable_inames="usePredictableInterfaceNames = lib.mkForce false;"
   else
     predictable_inames="usePredictableInterfaceNames = lib.mkForce true;"
@@ -95,7 +99,9 @@ EOF
   # This file was populated at runtime with the networking
   # details gathered from the active system.
   networking = {
-    nameservers = [ "8.8.8.8" ];
+    nameservers = [$(for a in "${nameservers[@]}"; do echo -n "
+      $a"; done)
+    ];
     defaultGateway = "${gateway}";
     defaultGateway6 = "${gateway6}";
     dhcpcd.enable = false;
@@ -145,8 +151,8 @@ makeSwap() {
 }
 
 removeSwap() {
-    swapoff -a
-    rm -vf /tmp/nixos-infect.*.swp
+  swapoff -a
+  rm -vf /tmp/nixos-infect.*.swp
 }
 
 prepareEnv() {
@@ -225,7 +231,9 @@ infect() {
   # Add nix build users
   # FIXME run only if necessary, rather than defaulting true
   groupadd nixbld -g 30000 || true
-  for i in {1..10}; do useradd -c "Nix build user $i" -d /var/empty -g nixbld -G nixbld -M -N -r -s "$(which nologin)" nixbld$i || true; done
+  for i in {1..10}; do
+    useradd -c "Nix build user $i" -d /var/empty -g nixbld -G nixbld -M -N -r -s "$(which nologin)" "nixbld$i" || true
+  done
   # TODO use addgroup and adduser as fallbacks
   #addgroup nixbld -g 30000 || true
   #for i in {1..10}; do adduser -DH -G nixbld nixbld$i || true; done
