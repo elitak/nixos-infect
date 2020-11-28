@@ -46,12 +46,7 @@ EOF
 }
 EOF
 
-  if [[ -n "$doNetConf" ]]
-  then
-    makeNetworkingConf
-  else
-    true
-  fi
+  [[ -n "$doNetConf" ]] && makeNetworkingConf
 }
 
 makeNetworkingConf() {
@@ -121,19 +116,6 @@ EOF
   '';
 }
 EOF
-  #! /usr/bin/env bash
-  # NB put your semi-sensitive (not posted to github) configuration in a separate
-  # file and include it via this customConfig() function. e.g.:
-  #  customConfig() {
-  #    cat > /etc/nixos/custom.nix << EOF
-  #    { config, lib, pkgs, ... }: {
-  #    }
-  #    EOF
-  #  }
-  #
-  # then you can add the files in configuration.nix's imports above and run something like:
-  #   cat customConfig nixos-infect | root@targethost bash
-  if [[ "$(type -t customConfig)" == "function" ]]; then customConfig; fi
 }
 
 makeSwap() {
