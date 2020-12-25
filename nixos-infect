@@ -46,7 +46,12 @@ EOF
 }
 EOF
 
-  [[ -n "$doNetConf" ]] && makeNetworkingConf
+  if [[ -n "$doNetConf" ]]
+  then
+    makeNetworkingConf
+  else
+    true
+  fi
 }
 
 makeNetworkingConf() {
