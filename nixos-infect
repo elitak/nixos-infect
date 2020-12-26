@@ -46,7 +46,7 @@ EOF
 }
 EOF
 
-  [[ -n "$doNetConf" ]] && makeNetworkingConf
+  [[ -n "$doNetConf" ]] && makeNetworkingConf || true
 }
 
 makeNetworkingConf() {
