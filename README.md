@@ -12,6 +12,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Hetzner Cloud](https://www.hetzner.com/cloud)
 * [Vultr](https://www.vultr.com/)
 * [Interserver VPS](https://www.interserver.net/vps/)
+* [Tencent Cloud Lighthouse](https://cloud.tencent.com/product/lighthouse)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
@@ -152,3 +153,16 @@ curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect |
 |Ubuntu      | 20.04           |**success**|2021-01-29|
 |Ubuntu      | 18.04           |**success**|2021-01-29|
 |Ubuntu      | 14.04           |**success**|2021-01-29|
+
+
+### Tencent Cloud Lighthouse
+
+Tencent Cloud Lighthouse **Hong Kong** Region Works out of the box.
+
+Other Regions in China may not work because of the unreliable connection between China and global Internet or [GFW](https://en.wikipedia.org/wiki/Great_Firewall).
+
+#### Tested on
+|Distribution|       Name      | Status    | test date|
+|------------|-----------------|-----------|----------|
+|Debian      | 10              |**success**|2021-03-11|
+
