@@ -13,6 +13,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Vultr](https://www.vultr.com/)
 * [Interserver VPS](https://www.interserver.net/vps/)
 * [Tencent Cloud Lighthouse](https://cloud.tencent.com/product/lighthouse)
+* [OVHcloud](https://www.ovh.com/)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
@@ -166,3 +167,11 @@ Other Regions in China may not work because of the unreliable connection between
 |------------|-----------------|-----------|----------|
 |Debian      | 10              |**success**|2021-03-11|
 
+
+### OVHcloud
+
+Before executing the install script, you may need to check your mounts with `df -h`. By default, OVH adds a relatively short in memory `tmpfs` mount on the `/tmp` folder, so the install script runs short in memory and fails. Just execute `umount /tmp` before launching the install script. Full install process described [here](https://lyderic.origenial.fr/install-nixos-on-ovh)
+
+|Distribution|       Name        | Status    | test date|
+|------------|-------------------|-----------|----------|
+|Arch Linux  | Arch Linux x86-64 |**success**|2021-03-25|
