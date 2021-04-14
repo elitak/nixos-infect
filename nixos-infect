@@ -4,11 +4,17 @@
 
 set -e -o pipefail
 
+ROOT_PASSWORD=
+
 makeConf() {
   # Skip everything if main config already present
   [[ -e /etc/nixos/configuration.nix ]] && return 0
   # NB <<"EOF" quotes / $ ` in heredocs, <<EOF does not
   mkdir -p /etc/nixos
+  # generate some default password, to make login possible if network is down
+  set +o pipefail
+  ROOT_PASSWORD="$(cat /dev/urandom | tr -dc _A-Z-a-z-0-9 | head -c12)"
+  set -o pipefail
   # Prevent grep for sending error code 1 (and halting execution) when no lines are selected : https://www.unix.com/man-page/posix/1P/grep
   local IFS=$'\n' 
   for trypath in /root/.ssh/authorized_keys $HOME/.ssh/authorized_keys; do 
@@ -34,6 +40,9 @@ makeConf() {
   users.users.root.openssh.authorizedKeys.keys = [$(while read -r line; do echo -n "
     \"$line\" "; done <<< "$keys")
   ];
+  $([ -n "$ROOT_PASSWORD" ] && echo "
+    users.users.root.password = ''$ROOT_PASSWORD'';
+  ")
 }
 EOF
   # If you rerun this later, be sure to prune the filesSystems attr
@@ -267,6 +276,14 @@ checkEnv
 makeConf
 infect
 removeSwap
+
+
+if [ -n "$ROOT_PASSWORD" ]; then
+  echo "-----"
+  echo "Root password set: $ROOT_PASSWORD"
+  echo "You can use it if instance is not reachable through SSH. Don't forget to change it after infection complete."
+  echo "-----"
+fi
 
 if [[ -z "$NO_REBOOT" ]]; then
   reboot
