@@ -42,6 +42,7 @@ EOF
 {
   imports = [ (modulesPath + "/profiles/qemu-guest.nix") ];
   boot.loader.grub.device = "$grubdev";
+  boot.initrd.kernelModules = [ "nvme" ];
   fileSystems."/" = { device = "$rootfsdev"; fsType = "ext4"; };
 }
 EOF
