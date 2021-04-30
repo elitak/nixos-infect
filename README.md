@@ -175,3 +175,4 @@ Before executing the install script, you may need to check your mounts with `df 
 |Distribution|       Name        | Status    | test date|
 |------------|-------------------|-----------|----------|
 |Arch Linux  | Arch Linux x86-64 |**success**|2021-03-25|
+|Debian      | 10                |**success**|2021-04-29|
