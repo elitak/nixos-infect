@@ -108,7 +108,7 @@ EOF
           $a"; done)
         ];
         ipv4.routes = [ { address = "${gateway}"; prefixLength = 32; } ];
-        ipv6.routes = [ { address = "${gateway6}"; prefixLength = 32; } ];
+        ipv6.routes = [ { address = "${gateway6}"; prefixLength = 128; } ];
       };
       $interfaces1
     };
