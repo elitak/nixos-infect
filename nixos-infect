@@ -42,6 +42,7 @@ EOF
 {
   imports = [ (modulesPath + "/profiles/qemu-guest.nix") ];
   boot.loader.grub.device = "$grubdev";
+  boot.initrd.kernelModules = [ "nvme" ];
   fileSystems."/" = { device = "$rootfsdev"; fsType = "ext4"; };
 }
 EOF
@@ -137,7 +138,7 @@ removeSwap() {
 
 prepareEnv() {
   # $grubdev is used in makeConf()
-  for grubdev in /dev/vda /dev/sda; do [[ -e $grubdev ]] && break; done
+  for grubdev in /dev/vda /dev/sda /dev/nvme0n1 ; do [[ -e $grubdev ]] && break; done
 
   # Retrieve root fs block device
   #                   (get root mount)  (get partition or logical volume)
