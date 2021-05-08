@@ -18,9 +18,6 @@ This script has successfully been tested on at least the follow hosting provider
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
 
-> *NB:* OpenVZ-based virtualization providers are known not to work with `nixos-infect` (or any other OS takeover script).
-> This is core to how OpenVZ operates and cannot be resolved.
-
 ## Motivation
 
 Motivation for this script: nixos-assimilate should supplant this script entirely,
