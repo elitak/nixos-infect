@@ -54,7 +54,7 @@ and so it is advised to run with `bash -x`.
 
 ## Hoster notes:
 ### Digital Ocean
-You mmay utilize Digital Ocean's "user data" mechanism (found in the Web UI or HTTP API),
+You may utilize Digital Ocean's "user data" mechanism (found in the Web UI or HTTP API),
 and supply to it the following example yaml stanzas:
 
 ```yaml
