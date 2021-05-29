@@ -187,6 +187,8 @@ req() {
 }
 
 checkEnv() {
+  [[ "$(whoami)" == "root" ]] || { echo "ERROR: Must run as root"; return 1; }
+
   # Perform some easy fixups before checking
   # TODO prevent multiple calls to apt-get update
   which dnf && dnf install -y perl-Digest-SHA # Fedora 24
@@ -199,8 +201,6 @@ checkEnv() {
   which curl  || fakeCurlUsingWget \
               || (which apt-get && apt-get update && apt-get install -y curl) \
               || true
-
-  [[ "$(whoami)" == "root" ]] || { echo "ERROR: Must run as root"; return 1; }
 
   req curl || req wget || { echo "ERROR: Missing both curl and wget"; return 1; }
   req bzcat            || { echo "ERROR: Missing bzcat";              return 1; }
@@ -261,10 +261,9 @@ infect() {
 
 [ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
 
-
+checkEnv
 prepareEnv
 makeSwap # smallest (512MB) droplet needs extra memory!
-checkEnv
 makeConf
 infect
 removeSwap
