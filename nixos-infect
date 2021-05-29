@@ -191,7 +191,7 @@ checkEnv() {
 
   # Perform some easy fixups before checking
   # TODO prevent multiple calls to apt-get update
-  which dnf && dnf install -y perl-Digest-SHA # Fedora 24
+  (which dnf && dnf install -y perl-Digest-SHA) || true # Fedora 24
   which bzcat || (which yum && yum install -y bzip2) \
               || (which apt-get && apt-get update && apt-get install -y bzip2) \
               || true
