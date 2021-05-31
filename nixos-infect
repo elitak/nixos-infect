@@ -61,7 +61,7 @@ EOF
   imports = [ (modulesPath + "/profiles/qemu-guest.nix") ];
 $bootcfg
   boot.initrd.kernelModules = [ "nvme" ];
-  fileSystems."/" = { device = "$rootfsdev"; fsType = "ext4"; };
+  fileSystems."/" = { device = "$rootfsdev"; fsType = "$rootfstype"; };
 }
 EOF
 
@@ -183,6 +183,7 @@ prepareEnv() {
   # Retrieve root fs block device
   #                   (get root mount)  (get partition or logical volume)
   rootfsdev=$(mount | grep "on / type" | awk '{print $1;}')
+  rootfstype=$(df $rootfsdev --output=fstype | sed 1d)
 
   # DigitalOcean doesn't seem to set USER while running user data
   export USER="root"
