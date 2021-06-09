@@ -10,8 +10,8 @@ makeConf() {
   # NB <<"EOF" quotes / $ ` in heredocs, <<EOF does not
   mkdir -p /etc/nixos
   # Prevent grep for sending error code 1 (and halting execution) when no lines are selected : https://www.unix.com/man-page/posix/1P/grep
-  local IFS=$'\n' 
-  for trypath in /root/.ssh/authorized_keys $HOME/.ssh/authorized_keys; do 
+  local IFS=$'\n'
+  for trypath in /root/.ssh/authorized_keys $HOME/.ssh/authorized_keys; do
       [[ -r "$trypath" ]] \
       && keys=$(sed -E 's/^.*((ssh|ecdsa)-[^[:space:]]+)[[:space:]]+([^[:space:]]+)([[:space:]]*.*)$/\1 \3\4/' "$trypath") \
       && break
@@ -36,14 +36,32 @@ makeConf() {
   ];
 }
 EOF
+
+  if isEFI; then
+    bootcfg=$(cat << EOF
+  boot.loader.grub = {
+    efiSupport = true;
+    efiInstallAsRemovable = true;
+    device = "nodev";
+  };
+  fileSystems."/boot" = { device = "$esp"; fsType = "vfat"; };
+EOF
+)
+  else
+    bootcfg=$(cat << EOF
+  boot.loader.grub.device = "$grubdev";
+EOF
+)
+  fi
+
   # If you rerun this later, be sure to prune the filesSystems attr
   cat > /etc/nixos/hardware-configuration.nix << EOF
 { modulesPath, ... }:
 {
   imports = [ (modulesPath + "/profiles/qemu-guest.nix") ];
-  boot.loader.grub.device = "$grubdev";
+$bootcfg
   boot.initrd.kernelModules = [ "nvme" ];
-  fileSystems."/" = { device = "$rootfsdev"; fsType = "ext4"; };
+  fileSystems."/" = { device = "$rootfsdev"; fsType = "$rootfstype"; };
 }
 EOF
 
@@ -136,13 +154,36 @@ removeSwap() {
   rm -vf /tmp/nixos-infect.*.swp
 }
 
+isEFI() {
+  [ -d /sys/firmware/efi ]
+}
+
+findESP() {
+  esp=""
+  for d in /boot/EFI /boot/efi /boot; do
+    [[ ! -d "$d" ]] && continue
+    [[ "$d" == "$(df "$d" --output=target | sed 1d)" ]] \
+      && esp="$(df "$d" --output=source | sed 1d)" \
+      && break
+  done
+  [[ -z "$esp" ]] && { echo "ERROR: No ESP mount point found"; return 1; }
+  for uuid in /dev/disk/by-uuid/*; do
+    [[ $(readlink -f "$uuid") == "$esp" ]] && echo $uuid && return 0
+  done
+}
+
 prepareEnv() {
-  # $grubdev is used in makeConf()
-  for grubdev in /dev/vda /dev/sda /dev/nvme0n1 ; do [[ -e $grubdev ]] && break; done
+  # $esp and $grubdev are used in makeConf()
+  if isEFI; then
+    esp="$(findESP)"
+  else
+    for grubdev in /dev/vda /dev/sda /dev/nvme0n1 ; do [[ -e $grubdev ]] && break; done
+  fi
 
   # Retrieve root fs block device
   #                   (get root mount)  (get partition or logical volume)
   rootfsdev=$(mount | grep "on / type" | awk '{print $1;}')
+  rootfstype=$(df $rootfsdev --output=fstype | sed 1d)
 
   # DigitalOcean doesn't seem to set USER while running user data
   export USER="root"
@@ -187,9 +228,11 @@ req() {
 }
 
 checkEnv() {
+  [[ "$(whoami)" == "root" ]] || { echo "ERROR: Must run as root"; return 1; }
+
   # Perform some easy fixups before checking
   # TODO prevent multiple calls to apt-get update
-  which dnf && dnf install -y perl-Digest-SHA # Fedora 24
+  (which dnf && dnf install -y perl-Digest-SHA) || true # Fedora 24
   which bzcat || (which yum && yum install -y bzip2) \
               || (which apt-get && apt-get update && apt-get install -y bzip2) \
               || true
@@ -200,16 +243,14 @@ checkEnv() {
               || (which apt-get && apt-get update && apt-get install -y curl) \
               || true
 
-  [[ "$(whoami)" == "root" ]] || { echo "ERROR: Must run as root"; return 1; }
-
-  req curl || req wget || { echo "ERROR: Missing both curl and wget"; return 1; }
-  req bzcat            || { echo "ERROR: Missing bzcat";              return 1; }
-  req xzcat            || { echo "ERROR: Missing xzcat";              return 1; }
-  req groupadd         || { echo "ERROR: Missing groupadd";           return 1; }
-  req useradd          || { echo "ERROR: Missing useradd";            return 1; }
-  req ip               || { echo "ERROR: Missing ip";                 return 1; }
-  req awk              || { echo "ERROR: Missing awk";                return 1; }
-  req cut              || { echo "ERROR: Missing cut";                return 1; }
+  req curl || req wget || { echo "ERROR: Missing both curl and wget";  return 1; }
+  req bzcat            || { echo "ERROR: Missing bzcat";               return 1; }
+  req xzcat            || { echo "ERROR: Missing xzcat";               return 1; }
+  req groupadd         || { echo "ERROR: Missing groupadd";            return 1; }
+  req useradd          || { echo "ERROR: Missing useradd";             return 1; }
+  req ip               || { echo "ERROR: Missing ip";                  return 1; }
+  req awk              || { echo "ERROR: Missing awk";                 return 1; }
+  req cut || req df    || { echo "ERROR: Missing coreutils (cut, df)"; return 1; }
 }
 
 infect() {
@@ -228,7 +269,7 @@ infect() {
   # shellcheck disable=SC1090
   source ~/.nix-profile/etc/profile.d/nix.sh
 
-  [[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-19.09"
+  [[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-20.09"
   nix-channel --remove nixpkgs
   nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
   nix-channel --update
@@ -255,16 +296,21 @@ infect() {
   echo root/.nix-defexpr/channels >> /etc/NIXOS_LUSTRATE
 
   rm -rf /boot.bak
+  isEFI && umount "$esp"
   mv -v /boot /boot.bak
+  if isEFI; then
+    mkdir /boot
+    mount "$esp" /boot
+    find /boot -depth ! -path /boot -exec rm -rf {} +
+  fi
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
 
 [ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
 
-
+checkEnv
 prepareEnv
 makeSwap # smallest (512MB) droplet needs extra memory!
-checkEnv
 makeConf
 infect
 removeSwap

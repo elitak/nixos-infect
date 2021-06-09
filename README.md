@@ -14,6 +14,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Interserver VPS](https://www.interserver.net/vps/)
 * [Tencent Cloud Lighthouse](https://cloud.tencent.com/product/lighthouse)
 * [OVHcloud](https://www.ovh.com/)
+* [Oracle Cloud Infrastructure](https://www.oracle.com/cloud/)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
@@ -173,3 +174,10 @@ Before executing the install script, you may need to check your mounts with `df 
 |------------|-------------------|-----------|----------|
 |Arch Linux  | Arch Linux x86-64 |**success**|2021-03-25|
 |Debian      | 10                |**success**|2021-04-29|
+
+### Oracle Cloud Infrastructure
+Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) instances.
+#### Tested on
+|Distribution|       Name      | Status    | test date|
+|------------|-----------------|-----------|----------|
+|Oracle Linux| 7.9             |**success**|2021-05-31|
