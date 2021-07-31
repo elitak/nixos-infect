@@ -11,7 +11,7 @@ makeConf() {
   mkdir -p /etc/nixos
   # Prevent grep for sending error code 1 (and halting execution) when no lines are selected : https://www.unix.com/man-page/posix/1P/grep
   local IFS=$'\n'
-  for trypath in /root/.ssh/authorized_keys $HOME/.ssh/authorized_keys; do
+  for trypath in /root/.ssh/authorized_keys /home/$SUDO_USER/.ssh/authorized_keys $HOME/.ssh/authorized_keys; do
       [[ -r "$trypath" ]] \
       && keys=$(sed -E 's/^.*((ssh|ecdsa)-[^[:space:]]+)[[:space:]]+([^[:space:]]+)([[:space:]]*.*)$/\1 \3\4/' "$trypath") \
       && break
