@@ -174,6 +174,7 @@ Before executing the install script, you may need to check your mounts with `df 
 |------------|-------------------|-----------|----------|
 |Arch Linux  | Arch Linux x86-64 |**success**|2021-03-25|
 |Debian      | 10                |**success**|2021-04-29|
+|Debian      | 11                |**success**|2021-11-17|
 
 ### Oracle Cloud Infrastructure
 Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) instances.
