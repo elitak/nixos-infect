@@ -45,7 +45,7 @@ and most importantly, simply didn't work for me!
 
 4) run the script with:
 ```
-  curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-21.05 bash -x
+  curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-21.11 bash -x
 ```
 
 *NB*: This script wipes out the targeted host's root filesystem when it runs to completion.
@@ -62,7 +62,7 @@ and supply to it the following example yaml stanzas:
 #cloud-config
 
 runcmd:
-  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIX_CHANNEL=nixos-21.05 bash 2>&1 | tee /tmp/infect.log
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIX_CHANNEL=nixos-21.11 bash 2>&1 | tee /tmp/infect.log
 ```
 
 #### Potential tweaks:
@@ -80,7 +80,7 @@ write_files:
       environment.systemPackages = with pkgs; [ vim ];
     }
 runcmd:
-  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-21.05 bash 2>&1 | tee /tmp/infect.log
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-21.11 bash 2>&1 | tee /tmp/infect.log
 ```
 
 
@@ -116,7 +116,7 @@ instantiate an Ubuntu box with the following "Startup Script":
 ```bash
 #!/bin/sh
 
-curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-21.05 bash
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-21.11 bash
 ```
 
 Allow for a few minutes over the usual Ubuntu deployment time for NixOS to download & install itself.
@@ -135,7 +135,7 @@ When creating a server provide the following script as "User data":
 ```
 #!/bin/sh
 
-curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-21.05 bash 2>&1 | tee /tmp/infect.log
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-21.11 bash 2>&1 | tee /tmp/infect.log
 ```
 
 #### Tested on
