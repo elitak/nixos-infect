@@ -176,7 +176,7 @@ prepareEnv() {
   if isEFI; then
     esp="$(findESP)"
   else
-    for grubdev in /dev/vda /dev/sda /dev/nvme0n1 ; do [[ -e $grubdev ]] && break; done
+    for grubdev in /dev/vda /dev/sda /dev/xvda /dev/nvme0n1 ; do [[ -e $grubdev ]] && break; done
   fi
 
   # Retrieve root fs block device
