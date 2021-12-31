@@ -183,3 +183,14 @@ Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) i
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
 |Oracle Linux| 7.9             |**success**|2021-05-31|
+
+### Aliyun ECS
+
+Aliyun ECS tested on ecs.s6-c1m2.large, region **cn-shanghai**, needs a little bit tweaks:
+
+- replace nix binary cache with [tuna mirror](https://mirrors.tuna.tsinghua.edu.cn/help/nix/) (with instructions in the page)
+
+#### Tested on
+|Distribution|       Name      | Status    | test date|
+|------------|-----------------|-----------|----------|
+|Ubuntu      | 20.04           |**success**|2021-12-28|
