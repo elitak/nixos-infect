@@ -182,7 +182,9 @@ Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) i
 #### Tested on
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
-|Oracle Linux| 7.9             |**success**|2021-05-31|
+|Oracle Linux| 7.9             |**success**|2022-01-08|
+
+After infection, you will have to use `root` instead of the non-privileged user to enter the instance with SSH.
 
 ### Aliyun ECS
 
