@@ -107,6 +107,7 @@ runcmd:
 |Ubuntu      |16.04.6 (LTS) x64|**success**|2020-03-30|
 |Ubuntu      |18.04.3 (LTS) x64|**success**|2020-03-30|
 |Ubuntu      |19.10 x64        |**success**|2020-03-30|
+|Ubuntu      |20.04 x64        |**success**|2022-03-23|
 
 ### Vultr
 
@@ -183,6 +184,7 @@ Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) i
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
 |Oracle Linux| 7.9             |**success**|2021-05-31|
+|Ubuntu      | 20.04           |**success**|2022-03-23|
 
 ### Aliyun ECS
 
