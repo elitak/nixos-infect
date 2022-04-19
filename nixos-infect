@@ -141,14 +141,17 @@ EOF
 EOF
 }
 
-chkSwap() {
+checkExistingSwap() {
   SWAPSHOW=$(swapon --show --noheadings --raw)
   zramswap=true
   swapcfg=""
   if [[ -n "$SWAPSHOW" ]]; then
-    zramswap=false
-    swapcfg="swapDevices = [ { device = \"${SWAPSHOW%% *}\"; } ];"
-    NO_SWAP=true 
+    SWAP_DEVICE="${SWAPSHOW%% *}"
+    if [[ "$SWAP_DEVICE" == dev* ]]; then
+      zramswap=false
+      swapcfg="swapDevices = [ { device = \"${SWAP_DEVICE}\"; } ];"
+      NO_SWAP=true 
+    fi
   fi
 }
 
@@ -322,7 +325,7 @@ infect() {
 
 checkEnv
 prepareEnv
-chkSwap
+checkExistingSwap
 if [[ -z "$NO_SWAP" ]]; then
     makeSwap # smallest (512MB) droplet needs extra memory!
 fi

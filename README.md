@@ -187,8 +187,13 @@ Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) i
 |Oracle Linux| 7.9             |**success**|2021-05-31|          |
 |Ubuntu      | 20.04           |**success**|2022-03-23|          |
 |Ubuntu      | 20.04           |**success**|2022-04-19| free arm |
-|Oracle Linux| 8.0             |**failed** |2022-04-19| free amd |
+|Oracle Linux| 8.0             | -failure- |2022-04-19| free amd |
+|CentOS      | 8.0             | -failure- |2022-04-19| free amd |
+|Oracle Linux| 7.9[1]          |**success**|2022-04-19| free amd |
 
+    [1] The Oracle 7.9 layout has 200Mb for /boot 8G for swap
+    PR#100 Adopted 8G Swap device
+    
 ### Aliyun ECS
 
 Aliyun ECS tested on ecs.s6-c1m2.large, region **cn-shanghai**, needs a little bit tweaks:
