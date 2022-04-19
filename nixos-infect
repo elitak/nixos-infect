@@ -147,7 +147,7 @@ checkExistingSwap() {
   swapcfg=""
   if [[ -n "$SWAPSHOW" ]]; then
     SWAP_DEVICE="${SWAPSHOW%% *}"
-    if [[ "$SWAP_DEVICE" == dev* ]]; then
+    if [[ "$SWAP_DEVICE" == /dev/* ]]; then
       zramswap=false
       swapcfg="swapDevices = [ { device = \"${SWAP_DEVICE}\"; } ];"
       NO_SWAP=true 
