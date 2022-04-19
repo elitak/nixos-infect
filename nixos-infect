@@ -274,7 +274,7 @@ infect() {
   nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
   nix-channel --update
 
-  export NIXOS_CONFIG=/etc/nixos/configuration.nix
+  export NIXOS_CONFIG="${NIXOS_CONFIG:-/etc/nixos/configuration.nix}"
 
   nix-env --set \
     -I nixpkgs=$HOME/.nix-defexpr/channels/nixos \
@@ -291,7 +291,7 @@ infect() {
 
   # Stage the Nix coup d'état
   touch /etc/NIXOS
-  echo etc/nixos                   > /etc/NIXOS_LUSTRATE
+  echo etc/nixos                  >> /etc/NIXOS_LUSTRATE
   echo etc/resolv.conf            >> /etc/NIXOS_LUSTRATE
   echo root/.nix-defexpr/channels >> /etc/NIXOS_LUSTRATE
 
