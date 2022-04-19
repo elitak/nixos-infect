@@ -147,7 +147,7 @@ chkSwap() {
   swapcfg=""
   if [[ -n "$SWAPSHOW" ]]; then
     zramswap=false
-    swapcfg="swapDevices = [ { device = "${SWAPSHOW%% *}"; } ];"
+    swapcfg="swapDevices = [ { device = \"${SWAPSHOW%% *}\"; } ];"
     NO_SWAP=true 
   fi
 }
