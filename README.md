@@ -182,10 +182,12 @@ Before executing the install script, you may need to check your mounts with `df 
 ### Oracle Cloud Infrastructure
 Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) instances.
 #### Tested on
-|Distribution|       Name      | Status    | test date|
-|------------|-----------------|-----------|----------|
-|Oracle Linux| 7.9             |**success**|2021-05-31|
-|Ubuntu      | 20.04           |**success**|2022-03-23|
+|Distribution|       Name      | Status    | test date|   Shape  |
+|------------|-----------------|-----------|----------|----------|
+|Oracle Linux| 7.9             |**success**|2021-05-31|          |
+|Ubuntu      | 20.04           |**success**|2022-03-23|          |
+|Ubuntu      | 20.04           |**success**|2022-04-19| free arm |
+|Oracle Linux| 8.0             |**failed** |2022-04-19| free amd |
 
 ### Aliyun ECS
 
