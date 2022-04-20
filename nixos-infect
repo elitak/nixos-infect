@@ -28,7 +28,7 @@ makeConf() {
   ];
 
   boot.cleanTmpDir = true;
-  zramSwap.enable = true;
+  zramSwap.enable = ${zramswap};
   networking.hostName = "$(hostname)";
   services.openssh.enable = true;
   users.users.root.openssh.authorizedKeys.keys = [$(while read -r line; do echo -n "
@@ -62,6 +62,7 @@ EOF
 $bootcfg
   boot.initrd.kernelModules = [ "nvme" ];
   fileSystems."/" = { device = "$rootfsdev"; fsType = "$rootfstype"; };
+  $swapcfg
 }
 EOF
 
@@ -140,8 +141,21 @@ EOF
 EOF
 }
 
+checkExistingSwap() {
+  SWAPSHOW=$(swapon --show --noheadings --raw)
+  zramswap=true
+  swapcfg=""
+  if [[ -n "$SWAPSHOW" ]]; then
+    SWAP_DEVICE="${SWAPSHOW%% *}"
+    if [[ "$SWAP_DEVICE" == "/dev/"* ]]; then
+      zramswap=false
+      swapcfg="swapDevices = [ { device = \"${SWAP_DEVICE}\"; } ];"
+      NO_SWAP=true 
+    fi
+  fi
+}
+
 makeSwap() {
-  # TODO check currently available swapspace first
   swapFile=$(mktemp /tmp/nixos-infect.XXXXX.swp)
   dd if=/dev/zero "of=$swapFile" bs=1M count=$((1*1024))
   chmod 0600 "$swapFile"
@@ -274,7 +288,7 @@ infect() {
   nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
   nix-channel --update
 
-  export NIXOS_CONFIG=/etc/nixos/configuration.nix
+  export NIXOS_CONFIG="${NIXOS_CONFIG:-/etc/nixos/configuration.nix}"
 
   nix-env --set \
     -I nixpkgs=$HOME/.nix-defexpr/channels/nixos \
@@ -291,15 +305,16 @@ infect() {
 
   # Stage the Nix coup d'état
   touch /etc/NIXOS
-  echo etc/nixos                   > /etc/NIXOS_LUSTRATE
+  echo etc/nixos                  >> /etc/NIXOS_LUSTRATE
   echo etc/resolv.conf            >> /etc/NIXOS_LUSTRATE
   echo root/.nix-defexpr/channels >> /etc/NIXOS_LUSTRATE
 
   rm -rf /boot.bak
   isEFI && umount "$esp"
-  mv -v /boot /boot.bak
+
+  mv -v /boot /boot.bak || { cp -a /boot /book.bak ; rm -rf /boot/* ; umount /boot ; }
   if isEFI; then
-    mkdir /boot
+    mkdir -p /boot
     mount "$esp" /boot
     find /boot -depth ! -path /boot -exec rm -rf {} +
   fi
@@ -310,6 +325,7 @@ infect() {
 
 checkEnv
 prepareEnv
+checkExistingSwap
 if [[ -z "$NO_SWAP" ]]; then
     makeSwap # smallest (512MB) droplet needs extra memory!
 fi
