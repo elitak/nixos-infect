@@ -113,7 +113,7 @@ runcmd:
 ### Vultr
 
 To set up a NixOS Vultr server,
-instantiate an Ubuntu box with the following "Startup Script":
+instantiate an Ubuntu box with the following "Cloud-Init User-Data":
 
 ```bash
 #!/bin/sh
