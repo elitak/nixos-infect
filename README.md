@@ -114,7 +114,7 @@ runcmd:
 ### Vultr
 
 To set up a NixOS Vultr server,
-instantiate an Ubuntu box with the following "Startup Script":
+instantiate an Ubuntu box with the following "Cloud-Init User-Data":
 
 ```bash
 #!/bin/sh
@@ -125,9 +125,10 @@ curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect |
 Allow for a few minutes over the usual Ubuntu deployment time for NixOS to download & install itself.
 
 #### Tested on
-|Distribution|       Name      | Status    | test date|   Slug           |   ID    |
-|------------|-----------------|-----------|----------|------------------|---------|
-| Ubuntu     | 18.10 x64       |**success**|(Unknown) | (Unknown)        |(Unknown)|
+|Distribution|       Name      | Status    | test date|
+|------------|-----------------|-----------|----------|
+| Ubuntu     | 18.10 x64       |**success**|(Unknown) |
+| Ubuntu     | 22.04 x64       |**success**|2022-07-04|
 
 
 ### Hetzner cloud
