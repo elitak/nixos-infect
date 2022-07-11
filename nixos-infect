@@ -309,6 +309,7 @@ infect() {
   echo etc/nixos                  >> /etc/NIXOS_LUSTRATE
   echo etc/resolv.conf            >> /etc/NIXOS_LUSTRATE
   echo root/.nix-defexpr/channels >> /etc/NIXOS_LUSTRATE
+  (cd / && ls etc/ssh/ssh_host_*_key* || true) >> /etc/NIXOS_LUSTRATE
 
   rm -rf /boot.bak
   isEFI && umount "$esp"
