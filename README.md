@@ -17,6 +17,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Oracle Cloud Infrastructure](https://www.oracle.com/cloud/)
 * [GalaxyGate](https://galaxygate.net)
 * [Cockbox](https://cockbox.org)
+* [Google Cloud Platform](https://cloud.google.com/)
 * [Contabo](https://contabo.com)
 
 Should you find that it works on your hoster,
@@ -226,6 +227,12 @@ Requred some Xen modules to work out, after that NixOS erected itself without a 
 |------------|-----------------|-----------|----------|
 |Ubuntu      | 20.04           |**success**|2022-06-12|
 
+### Google Cloud Platform
+
+#### Tested on
+|Distribution.                        |       Name      | Status    | test date|
+|-------------------------------------|-----------------|-----------|----------|
+| Ubuntu on Ampere Altra (Arm64)      | 20.04           |**success**|2022-09-07|
 
 ### Contabo
 Tested on Cloud VPS. Contabo sets the hostname to something like `vmi######.contaboserver.net`, Nixos only allows RFC 1035 compliant hostnames ([see here](https://search.nixos.org/options?show=networking.hostName&query=hostname)). Run `hostname something_without_dots` before running the script. If you run the script before changing the hostname - remove the `/etc/nixos/configuration.nix` so it's regenerated with the new hostname.
