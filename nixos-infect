@@ -60,7 +60,7 @@ EOF
 {
   imports = [ (modulesPath + "/profiles/qemu-guest.nix") ];
 $bootcfg
-  boot.initrd.availableKernelModules = [ "ata_piix" "uhci_hcd" "xen_blkfront" ];
+  boot.initrd.availableKernelModules = [ "ata_piix" "uhci_hcd" "vmw_pvscsi" "xen_blkfront" ];
   boot.initrd.kernelModules = [ "nvme" ];
   fileSystems."/" = { device = "$rootfsdev"; fsType = "$rootfstype"; };
   $swapcfg
