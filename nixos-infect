@@ -54,13 +54,18 @@ EOF
 )
   fi
 
+  availableKernelModules=('"ata_piix"' '"uhci_hcd"' '"xen_blkfront"')
+  if isX86_64; then
+    availableKernelModules+=('"vmw_pvscsi"')
+  fi
+
   # If you rerun this later, be sure to prune the filesSystems attr
   cat > /etc/nixos/hardware-configuration.nix << EOF
 { modulesPath, ... }:
 {
   imports = [ (modulesPath + "/profiles/qemu-guest.nix") ];
 $bootcfg
-  boot.initrd.availableKernelModules = [ "ata_piix" "uhci_hcd" "vmw_pvscsi" "xen_blkfront" ];
+  boot.initrd.availableKernelModules = [ ${availableKernelModules[@]} ];
   boot.initrd.kernelModules = [ "nvme" ];
   fileSystems."/" = { device = "$rootfsdev"; fsType = "$rootfstype"; };
   $swapcfg
@@ -167,6 +172,10 @@ makeSwap() {
 removeSwap() {
   swapoff -a
   rm -vf /tmp/nixos-infect.*.swp
+}
+
+isX86_64 {
+  [[ "$(uname -m)" == "x86_64" ]]
 }
 
 isEFI() {
