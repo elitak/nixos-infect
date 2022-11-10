@@ -275,6 +275,10 @@ checkEnv() {
   req ip               || { echo "ERROR: Missing ip";                  return 1; }
   req awk              || { echo "ERROR: Missing awk";                 return 1; }
   req cut || req df    || { echo "ERROR: Missing coreutils (cut, df)"; return 1; }
+
+  # On some versions of Oracle Linux these have the wrong permissions,
+  # which stops sshd from starting when NixOS boots
+  chmod 600 /etc/ssh/ssh_host_*_key
 }
 
 infect() {
