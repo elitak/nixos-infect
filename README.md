@@ -197,6 +197,7 @@ Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) i
 |Oracle Linux| 8.0             | -failure- |2022-04-19| free amd |
 |CentOS      | 8.0             | -failure- |2022-04-19| free amd |
 |Oracle Linux| 7.9[1]          |**success**|2022-04-19| free amd |
+|Ubuntu      | 22.04           |**success**|2022-11-13| free arm |
 
     [1] The Oracle 7.9 layout has 200Mb for /boot 8G for swap
     PR#100 Adopted 8G Swap device
