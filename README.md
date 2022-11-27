@@ -241,3 +241,13 @@ Tested on Cloud VPS. Contabo sets the hostname to something like `vmi######.cont
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
 |Ubuntu      | 22.04           |**success**|2022-09-26|
+
+### ServArica
+Requires the same static network settings that Digital Ocean does.
+
+    curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=servarica NIX_CHANNEL=nixos-22.05 bash
+
+#### Tested on
+|Distribution|       Name      | Status    | test date|
+|------------|-----------------|-----------|----------|
+|Ubuntu      |20.04            | success   |2022-11-26|
