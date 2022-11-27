@@ -250,4 +250,4 @@ Requires the same static network settings that Digital Ocean does.
 #### Tested on
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
-|Ubuntu      |20.04            | success   |2022-11-26|
+|Ubuntu      | 20.04           | success   |2022-11-26|
