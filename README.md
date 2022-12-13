@@ -19,6 +19,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Cockbox](https://cockbox.org)
 * [Google Cloud Platform](https://cloud.google.com/)
 * [Contabo](https://contabo.com)
+* [AWS Lightsail](https://aws.amazon.com/lightsail/)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
@@ -241,3 +242,15 @@ Tested on Cloud VPS. Contabo sets the hostname to something like `vmi######.cont
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
 |Ubuntu      | 22.04           |**success**|2022-09-26|
+
+### AWS Lightsail
+Make sure to set `PROVIDER="lightsail"`. 
+
+Setting a root ssh key manually is not necessary, the key provided as part of the instance launch process will be used.
+
+If you run into issues, debug using the most similar ec2 instance that is on the Nitro platform. Nitro platform instances have a serial console that allow you to troubleshoot boot issues, and Lightsail instances are just EC2 with a different pricing model and UI.
+
+#### Tested on
+|Distribution|       Name      | Status    | test date|
+|------------|-----------------|-----------|----------|
+|Debian      | 11.4            |**success**|2022-12-12|
