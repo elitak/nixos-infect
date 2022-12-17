@@ -1,0 +1,34 @@
+name: markdown_lint
+
+on:
+  push:
+    branches:
+      - master
+      - /^sova\//
+
+jobs:
+  markdown_lint:
+  name: validate markdown
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Markdown Lint
+        uses: ruzickap/action-my-markdown-linter@v1
+        with:
+          config_file: md-linting.yml
+          debug: true
+
+      - name: Markdown Lint - check only 'docs' directory and exclude CHANGELOG.md
+        uses: ruzickap/action-my-markdown-linter@v1
+        with:
+          search_paths: |
+            docs/
+          exclude: |
+            CHANGELOG.md
+
+      - name: Markdown Lint - simple example
+        uses: ruzickap/action-my-markdown-linter@v1
+
+      - name: Markdown Lint using pre-built container
+        uses: docker://peru/my-markdown-linter@v1
