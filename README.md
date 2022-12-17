@@ -260,3 +260,4 @@ curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect |
 |Debian      | 11              |**success**|2022-12-01|  
 |Ubuntu      | 20.04           |**success**|2022-12-01| 
 |Ubuntu      | 22.04           |**success**|2022-12-01| 
+
