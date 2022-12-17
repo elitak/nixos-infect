@@ -19,6 +19,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Cockbox](https://cockbox.org)
 * [Google Cloud Platform](https://cloud.google.com/)
 * [Contabo](https://contabo.com)
+* [Liga Hosting](https://ligahosting.ro)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
@@ -241,3 +242,21 @@ Tested on Cloud VPS. Contabo sets the hostname to something like `vmi######.cont
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
 |Ubuntu      | 22.04           |**success**|2022-09-26|
+
+### Liga Hosting
+
+Liga Hosting works without any issue.  You'll need to add your ssh key to the host either during
+build time or using `ssh-copy-id` before running nixos-infect
+
+```
+#!/bin/sh
+
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-22.11 bash 2>&1 | tee /tmp/infect.log
+```
+
+#### Tested on
+|Distribution|       Name      | Status    | test date| 
+|------------|-----------------|-----------|----------| 
+|Debian      | 11              |**success**|2022-12-01|  
+|Ubuntu      | 20.04           |**success**|2022-12-01| 
+|Ubuntu      | 22.04           |**success**|2022-12-01| 
