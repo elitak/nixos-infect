@@ -337,7 +337,9 @@ infect() {
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
 
-[ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
+if [[ "$PROVIDER" = "digitalocean" ]] || [[ "$PROVIDER" = "servarica" ]]; then
+	doNetConf=y # some providers require detailed network config to be generated
+fi
 
 checkEnv
 prepareEnv

@@ -243,9 +243,20 @@ Tested on Cloud VPS. Contabo sets the hostname to something like `vmi######.cont
 |------------|-----------------|-----------|----------|
 |Ubuntu      | 22.04           |**success**|2022-09-26|
 
+### ServArica
+Requires the same static network settings that Digital Ocean does.
+
+    curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=servarica NIX_CHANNEL=nixos-22.05 bash
+
+#### Tested on
+|Distribution|       Name      | Status    | test date|
+|------------|-----------------|-----------|----------|
+|Ubuntu      | 20.04           | success   |2022-11-26|
+
 ### Clouding.io
 I could not get it to run via UserData scripts, but downloading and executing the script worked flawlessly.
 ### Tested on
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
 |Debian      | 11              |**success**|2022-12-20|
+
