@@ -20,6 +20,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Google Cloud Platform](https://cloud.google.com/)
 * [Contabo](https://contabo.com)
 * [Windcloud](https://windcloud.de/)
+* [Clouding.io](https://clouding.io)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
@@ -249,3 +250,21 @@ Tested on vServer. The network configuration seems to be important so the same t
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
 |Ubuntu      | 20.04           |**success**|2022-12-09|
+
+### ServArica
+Requires the same static network settings that Digital Ocean does.
+
+    curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=servarica NIX_CHANNEL=nixos-22.05 bash
+
+#### Tested on
+|Distribution|       Name      | Status    | test date|
+|------------|-----------------|-----------|----------|
+|Ubuntu      | 20.04           | success   |2022-11-26|
+
+### Clouding.io
+I could not get it to run via UserData scripts, but downloading and executing the script worked flawlessly.
+### Tested on
+|Distribution|       Name      | Status    | test date|
+|------------|-----------------|-----------|----------|
+|Debian      | 11              |**success**|2022-12-20|
+
