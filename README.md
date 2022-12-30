@@ -140,21 +140,22 @@ Allow for a few minutes over the usual Ubuntu deployment time for NixOS to downl
 
 ### Hetzner cloud
 
-Hetzner cloud works out of the box.
+Hetzner cloud works out of the box. Be sure to have your ssh-key added prior to setting user data.
+
 When creating a server provide the following script as "User data":
 
 ```
 #!/bin/sh
 
-curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-22.05 bash 2>&1 | tee /tmp/infect.log
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-22.11 bash 2>&1 | tee /tmp/infect.log
 ```
 
 #### Tested on
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
-| Debian     | 11              |**success**|2021-11-26|
-| Ubuntu     | 20.04 x64       |**success**|(Unknown) |
-| Ubuntu     | 22.04 x64       |**success**|2022-06-29|
+| Debian     | 11              |**success**|2022-12-30|
+| Ubuntu     | 20.04 x64       |**success**|2022-12-30|
+| Ubuntu     | 22.04 x64       |**success**|2022-12-30|
 
 ### InterServer VPS
 #### Tested on
