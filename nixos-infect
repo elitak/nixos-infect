@@ -140,7 +140,10 @@ EOF
   networking = {
     nameservers = [ ${nameservers[@]} ];
     defaultGateway = "${gateway}";
-    defaultGateway6 = "${gateway6}";
+    defaultGateway6 = {
+      address = "${gateway6}";
+      interface = "${eth0_name}";
+    };
     dhcpcd.enable = false;
     $predictable_inames
     interfaces = {
@@ -362,7 +365,7 @@ infect() {
 
 [ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
 [ "$PROVIDER" = "lightsail" ] && newrootfslabel="nixos"
-if [[ "$PROVIDER" = "digitalocean" ]] || [[ "$PROVIDER" = "servarica" ]]; then
+if [[ "$PROVIDER" = "digitalocean" ]] || [[ "$PROVIDER" = "servarica" ]] || [[ "$PROVIDER" = "hetznercloud" ]]; then
 	doNetConf=y # some providers require detailed network config to be generated
 fi
 

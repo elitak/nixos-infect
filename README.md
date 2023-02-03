@@ -144,7 +144,7 @@ When creating a server provide the following script as "User data":
 ```
 #!/bin/sh
 
-curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-22.05 bash 2>&1 | tee /tmp/infect.log
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=hetznercloud NIX_CHANNEL=nixos-22.05 bash 2>&1 | tee /tmp/infect.log
 ```
 
 #### Tested on
