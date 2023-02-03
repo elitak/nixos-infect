@@ -23,6 +23,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [AWS Lightsail](https://aws.amazon.com/lightsail/)
 * [Windcloud](https://windcloud.de/)
 * [Clouding.io](https://clouding.io)
+* [Scaleway](https://scaleway.com)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
@@ -119,9 +120,7 @@ runcmd:
 |Ubuntu      |22.04 x64        |**success**|2022-10-14|
 
 ### Vultr
-
-To set up a NixOS Vultr server,
-instantiate an Ubuntu box with the following "Cloud-Init User-Data":
+To set up a NixOS Vultr server, instantiate an Ubuntu box with the following "Cloud-Init User-Data":
 
 ```bash
 #!/bin/sh
@@ -139,14 +138,13 @@ Allow for a few minutes over the usual Ubuntu deployment time for NixOS to downl
 
 
 ### Hetzner cloud
-
 Hetzner cloud works out of the box.
 When creating a server provide the following script as "User data":
 
 ```
 #!/bin/sh
 
-curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-22.11 bash 2>&1 | tee /tmp/infect.log
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=hetznercloud NIX_CHANNEL=nixos-22.11 bash 2>&1 | tee /tmp/infect.log
 ```
 
 #### Tested on
@@ -157,6 +155,7 @@ curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect |
 | Ubuntu     | 22.04 x64       |**success**|2022-06-29|
 
 ### InterServer VPS
+
 #### Tested on
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
@@ -168,7 +167,6 @@ curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect |
 
 
 ### Tencent Cloud Lighthouse
-
 Tencent Cloud Lighthouse **Hong Kong** Region Works out of the box.
 
 Other Regions in China may not work because of the unreliable connection between China and global Internet or [GFW](https://en.wikipedia.org/wiki/Great_Firewall).
@@ -180,7 +178,6 @@ Other Regions in China may not work because of the unreliable connection between
 
 
 ### OVHcloud
-
 Before executing the install script, you may need to check your mounts with `df -h`. By default, OVH adds a relatively short in memory `tmpfs` mount on the `/tmp` folder, so the install script runs short in memory and fails. Just execute `umount /tmp` before launching the install script. Full install process described [here](https://lyderic.origenial.fr/install-nixos-on-ovh)
 
 |Distribution|       Name        | Status    | test date|
@@ -192,6 +189,7 @@ Before executing the install script, you may need to check your mounts with `df 
 
 ### Oracle Cloud Infrastructure
 Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) instances.
+
 #### Tested on
 |Distribution|       Name      | Status    | test date|   Shape  |
 |------------|-----------------|-----------|----------|----------|
@@ -207,9 +205,7 @@ Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) i
     PR#100 Adopted 8G Swap device
     
 ### Aliyun ECS
-
-Aliyun ECS tested on ecs.s6-c1m2.large, region **cn-shanghai**, needs a little bit tweaks:
-
+Aliyun ECS tested on ecs.s6-c1m2.large, region **cn-shanghai**, needs a few tweaks:
 - replace nix binary cache with [tuna mirror](https://mirrors.tuna.tsinghua.edu.cn/help/nix/) (with instructions in the page)
 
 #### Tested on
@@ -241,6 +237,7 @@ Requred some Xen modules to work out, after that NixOS erected itself without a 
 
 ### Contabo
 Tested on Cloud VPS. Contabo sets the hostname to something like `vmi######.contaboserver.net`, Nixos only allows RFC 1035 compliant hostnames ([see here](https://search.nixos.org/options?show=networking.hostName&query=hostname)). Run `hostname something_without_dots` before running the script. If you run the script before changing the hostname - remove the `/etc/nixos/configuration.nix` so it's regenerated with the new hostname.
+
 #### Tested on
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
@@ -273,6 +270,7 @@ If you run into issues, debug using the most similar ec2 instance that is on the
 
 ### Windcloud
 Tested on vServer. The network configuration seems to be important so the same tweaks as for DigitalOcean are necessary (see above).
+
 #### Tested on
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
@@ -291,8 +289,31 @@ Requires the same static network settings that Digital Ocean does.
 
 ### Clouding.io
 I could not get it to run via UserData scripts, but downloading and executing the script worked flawlessly.
-### Tested on
+
+#### Tested on
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
 |Debian      | 11              |**success**|2022-12-20|
 
+### Scaleway
+As of November 2020, it is easy to get a NixOS VM running on Scaleway by using nixos-infect and Scaleway's support for cloud init.  
+All that is needed is to follow the nixos-infect recipe for Digital Ocean, removing the Digital Ocean-specific stuff.  
+So, pragmatically, start an Ubuntu or Fedora VM and use something like the following as your cloud-init startup script:
+```cloud-init
+#cloud-config
+write_files:
+- path: /etc/nixos/host.nix
+  permissions: '0644'
+  content: |
+    {pkgs, ...}:
+    {
+      environment.systemPackages = with pkgs; [ tmux ];
+    }
+runcmd:
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect |  NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-22.10 bash 2>&1 | tee /tmp/infect.log
+```
+
+#### Tested on
+|Distribution|       Name      | Status    | test date|
+|------------|-----------------|-----------|----------|
+|Ubuntu      | 20.04           | success   |2020-11-??|
