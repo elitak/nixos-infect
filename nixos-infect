@@ -177,7 +177,7 @@ checkExistingSwap() {
     if [[ "$SWAP_DEVICE" == "/dev/"* ]]; then
       zramswap=false
       swapcfg="swapDevices = [ { device = \"${SWAP_DEVICE}\"; } ];"
-      NO_SWAP=true 
+      NO_SWAP=true
     fi
   fi
 }
@@ -318,7 +318,7 @@ infect() {
   # shellcheck disable=SC1090
   source ~/.nix-profile/etc/profile.d/nix.sh
 
-  [[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-22.05"
+  [[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-22.11"
   nix-channel --remove nixpkgs
   nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
   nix-channel --update

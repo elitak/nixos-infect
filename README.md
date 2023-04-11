@@ -71,7 +71,7 @@ and supply to it the following example yaml stanzas:
 #cloud-config
 
 runcmd:
-  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIX_CHANNEL=nixos-22.05 bash 2>&1 | tee /tmp/infect.log
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIX_CHANNEL=nixos-22.11 bash 2>&1 | tee /tmp/infect.log
 ```
 
 #### Potential tweaks:
@@ -89,7 +89,7 @@ write_files:
       environment.systemPackages = with pkgs; [ vim ];
     }
 runcmd:
-  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-22.05 bash 2>&1 | tee /tmp/infect.log
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-22.11 bash 2>&1 | tee /tmp/infect.log
 ```
 
 
@@ -125,7 +125,7 @@ To set up a NixOS Vultr server, instantiate an Ubuntu box with the following "Cl
 ```bash
 #!/bin/sh
 
-curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-22.05 bash
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-22.11 bash
 ```
 
 Allow for a few minutes over the usual Ubuntu deployment time for NixOS to download & install itself.
@@ -205,7 +205,7 @@ Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) i
     [1] The Oracle 7.9 layout has 200Mb for /boot 8G for swap
     PR#100 Adopted 8G Swap device
     [2] OL9.1 had 2GB /boot, 100MB /boot/efi (nixos used as /boot) and swapfile
-    
+
 ### Aliyun ECS
 Aliyun ECS tested on ecs.s6-c1m2.large, region **cn-shanghai**, needs a few tweaks:
 - replace nix binary cache with [tuna mirror](https://mirrors.tuna.tsinghua.edu.cn/help/nix/) (with instructions in the page)
@@ -257,14 +257,14 @@ curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect |
 ```
 
 #### Tested on
-|Distribution|       Name      | Status    | test date| 
-|------------|-----------------|-----------|----------| 
-|Debian      | 11              |**success**|2022-12-01|  
-|Ubuntu      | 20.04           |**success**|2022-12-01| 
-|Ubuntu      | 22.04           |**success**|2022-12-01| 
+|Distribution|       Name      | Status    | test date|
+|------------|-----------------|-----------|----------|
+|Debian      | 11              |**success**|2022-12-01|
+|Ubuntu      | 20.04           |**success**|2022-12-01|
+|Ubuntu      | 22.04           |**success**|2022-12-01|
 
 ### AWS Lightsail
-Make sure to set `PROVIDER="lightsail"`. 
+Make sure to set `PROVIDER="lightsail"`.
 
 Setting a root ssh key manually is not necessary, the key provided as part of the instance launch process will be used.
 
@@ -281,7 +281,7 @@ Tested on vServer. The network configuration seems to be important so the same t
 ### ServArica
 Requires the same static network settings that Digital Ocean does.
 
-    curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=servarica NIX_CHANNEL=nixos-22.05 bash
+    curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=servarica NIX_CHANNEL=nixos-22.11 bash
 
 #### Tested on
 |Distribution|       Name      | Status    | test date|
@@ -298,8 +298,8 @@ I could not get it to run via UserData scripts, but downloading and executing th
 |Debian      | 11              |**success**|2022-12-20|
 
 ### Scaleway
-As of November 2020, it is easy to get a NixOS VM running on Scaleway by using nixos-infect and Scaleway's support for cloud init.  
-All that is needed is to follow the nixos-infect recipe for Digital Ocean, removing the Digital Ocean-specific stuff.  
+As of November 2020, it is easy to get a NixOS VM running on Scaleway by using nixos-infect and Scaleway's support for cloud init.
+All that is needed is to follow the nixos-infect recipe for Digital Ocean, removing the Digital Ocean-specific stuff.
 So, pragmatically, start an Ubuntu or Fedora VM and use something like the following as your cloud-init startup script:
 ```cloud-init
 #cloud-config
