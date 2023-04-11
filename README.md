@@ -200,9 +200,11 @@ Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) i
 |CentOS      | 8.0             | -failure- |2022-04-19| free amd |
 |Oracle Linux| 7.9[1]          |**success**|2022-04-19| free amd |
 |Ubuntu      | 22.04           |**success**|2022-11-13| free arm |
+|Oracle Linux| 9.1[2]          |**success**|2023-03-29| free arm |
 
     [1] The Oracle 7.9 layout has 200Mb for /boot 8G for swap
     PR#100 Adopted 8G Swap device
+    [2] OL9.1 had 2GB /boot, 100MB /boot/efi (nixos used as /boot) and swapfile
 
 ### Aliyun ECS
 Aliyun ECS tested on ecs.s6-c1m2.large, region **cn-shanghai**, needs a few tweaks:
