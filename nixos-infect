@@ -47,12 +47,13 @@ EOF
 
   if isEFI; then
     bootcfg=$(cat << EOF
+  boot.loader.efi.efiSysMountPoint = "/boot/efi";
   boot.loader.grub = {
     efiSupport = true;
     efiInstallAsRemovable = true;
     device = "nodev";
   };
-  fileSystems."/boot" = { device = "$esp"; fsType = "vfat"; };
+  fileSystems."/boot/efi" = { device = "$esp"; fsType = "vfat"; };
 EOF
 )
   else
@@ -356,9 +357,9 @@ infect() {
 
   mv -v /boot /boot.bak || { cp -a /boot /boot.bak ; rm -rf /boot/* ; umount /boot ; }
   if isEFI; then
-    mkdir -p /boot
-    mount "$esp" /boot
-    find /boot -depth ! -path /boot -exec rm -rf {} +
+    mkdir -p /boot/efi
+    mount "$esp" /boot/efi
+    find /boot/efi -depth ! -path /boot/efi -exec rm -rf {} +
   fi
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
