@@ -8,22 +8,22 @@ Use with extreme caution and preferably only on newly provisioned systems.
 
 This script has successfully been tested on at least the follow hosting providers and plans:
 
-* [DigitalOcean](https://www.digitalocean.com/products/droplets/)
-* [Hetzner Cloud](https://www.hetzner.com/cloud)
-* [Vultr](https://www.vultr.com/)
-* [Interserver VPS](https://www.interserver.net/vps/)
-* [Tencent Cloud Lighthouse](https://cloud.tencent.com/product/lighthouse)
-* [OVHcloud](https://www.ovh.com/)
-* [Oracle Cloud Infrastructure](https://www.oracle.com/cloud/)
-* [GalaxyGate](https://galaxygate.net)
-* [Cockbox](https://cockbox.org)
-* [Google Cloud Platform](https://cloud.google.com/)
-* [Contabo](https://contabo.com)
-* [Liga Hosting](https://ligahosting.ro)
 * [AWS Lightsail](https://aws.amazon.com/lightsail/)
-* [Windcloud](https://windcloud.de/)
 * [Clouding.io](https://clouding.io)
+* [Cockbox](https://cockbox.org)
+* [Contabo](https://contabo.com)
+* [DigitalOcean](https://www.digitalocean.com/products/droplets/)
+* [GalaxyGate](https://galaxygate.net)
+* [Google Cloud Platform](https://cloud.google.com/)
+* [Hetzner Cloud](https://www.hetzner.com/cloud)
+* [Interserver VPS](https://www.interserver.net/vps/)
+* [Liga Hosting](https://ligahosting.ro)
+* [Oracle Cloud Infrastructure](https://www.oracle.com/cloud/)
+* [OVHcloud](https://www.ovh.com/)
 * [Scaleway](https://scaleway.com)
+* [Tencent Cloud Lighthouse](https://cloud.tencent.com/product/lighthouse)
+* [Vultr](https://www.vultr.com/)
+* [Windcloud](https://windcloud.de/)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
