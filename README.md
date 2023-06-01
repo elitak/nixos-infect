@@ -186,6 +186,17 @@ Before executing the install script, you may need to check your mounts with `df 
 |Debian      | 10                |**success**|2021-04-29|
 |Debian      | 11                |**success**|2021-11-17|
 |Ubuntu      | 22.04             |**success**|2022-06-19|
+|Ubuntu      | 23.04             |**Fails**  |2023-06-01|
+
+The 23.04 Ubuntu distribution fails to boot, due to the following error:
+
+```
+/dev/sda1 has unsupported feature(s): FEATURE_C12
+
+e2fsck: Get a newer version of e2fsck
+```
+
+Using an older Ubuntu version fixes this issue.
 
 ### Oracle Cloud Infrastructure
 Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) instances.
