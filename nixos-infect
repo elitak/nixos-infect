@@ -323,6 +323,12 @@ infect() {
   nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
   nix-channel --update
 
+  if [[ $NIXOS_CONFIG = http* ]]
+  then
+    curl $NIXOS_CONFIG -o /etc/nixos/configuration.nix
+    unset NIXOS_CONFIG
+  fi
+
   export NIXOS_CONFIG="${NIXOS_CONFIG:-/etc/nixos/configuration.nix}"
 
   nix-env --set \
