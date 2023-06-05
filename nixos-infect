@@ -41,7 +41,7 @@ makeConf() {
   networking.domain = "$(hostname -d)";
   services.openssh.enable = true;
   users.users.root.openssh.authorizedKeys.keys = [$(while read -r line; do echo -n "
-    \"$line\" "; done <<< "$keys")
+    ''$line'' "; done <<< "$keys")
   ];
 }
 EOF
