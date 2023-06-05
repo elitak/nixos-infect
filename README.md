@@ -153,6 +153,7 @@ curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect |
 | Debian     | 11              |**success**|2021-11-26|
 | Ubuntu     | 20.04 x64       |**success**|(Unknown) |
 | Ubuntu     | 22.04 x64       |**success**|2022-06-29|
+| Ubuntu     | 22.04 aarch64   |**success**|2023-04-16|
 
 ### InterServer VPS
 
