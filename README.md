@@ -213,10 +213,13 @@ Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) i
 |Oracle Linux| 7.9[1]          |**success**|2022-04-19| free amd |
 |Ubuntu      | 22.04           |**success**|2022-11-13| free arm |
 |Oracle Linux| 9.1[2]          |**success**|2023-03-29| free arm |
+|Oracle Linux| 8.7[3]          |**success**|2023-06-06| free amd |
 
     [1] The Oracle 7.9 layout has 200Mb for /boot 8G for swap
     PR#100 Adopted 8G Swap device
     [2] OL9.1 had 2GB /boot, 100MB /boot/efi (nixos used as /boot) and swapfile
+    [3] Both 22.11 and 23.05 failed to boot, but installing 22.05 and then upgrading
+    worked out as intended.
 
 ### Aliyun ECS
 Aliyun ECS tested on ecs.s6-c1m2.large, region **cn-shanghai**, needs a few tweaks:
