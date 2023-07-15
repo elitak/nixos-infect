@@ -117,6 +117,7 @@ makeNetworkingConf() {
         ipv6.addresses = [$(for a in "${eth1_ip6s[@]}"; do echo -n "
           $a"; done)
         ];
+        };
 EOF
 )
     extraRules1="ATTR{address}==\"${ether1}\", NAME=\"${eth1_name}\""
