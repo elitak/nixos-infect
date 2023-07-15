@@ -109,7 +109,7 @@ makeNetworkingConf() {
     eth1_ip4s=$(ip address show dev "$eth1_name" | grep 'inet ' | sed -r 's|.*inet ([0-9.]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|')
     eth1_ip6s=$(ip address show dev "$eth1_name" | grep 'inet6 ' | sed -r 's|.*inet6 ([0-9a-f:]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|' || '')
     ether1=$(ip address show dev "$eth1_name" | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|')
-    interfaces1=<< EOF
+    interfaces1=$(cat << EOF
       $eth1_name = {
         ipv4.addresses = [$(for a in "${eth1_ip4s[@]}"; do echo -n "
           $a"; done)
@@ -118,6 +118,7 @@ makeNetworkingConf() {
           $a"; done)
         ];
 EOF
+)
     extraRules1="ATTR{address}==\"${ether1}\", NAME=\"${eth1_name}\""
   else
     interfaces1=""
