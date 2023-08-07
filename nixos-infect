@@ -40,9 +40,11 @@ makeConf() {
   networking.hostName = "$(hostname -s)";
   networking.domain = "$(hostname -d)";
   services.openssh.enable = true;
-  users.users.root.openssh.authorizedKeys.keys = [$(while read -r line; do echo -n "
-    ''$line'' "; done <<< "$keys")
-  ];
+  users.users.root.openssh.authorizedKeys.keys = [$(while read -r line; do
+    line=$(echo -n "$line" | sed 's/\r//g')
+    trimmed_line=$(echo -n "$line" | tr -d '[:space:]')
+    echo -n "''$trimmed_line'' "
+  done <<< "$keys")];
 }
 EOF
 
