@@ -24,6 +24,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Windcloud](https://windcloud.de/)
 * [Clouding.io](https://clouding.io)
 * [Scaleway](https://scaleway.com)
+* [RackNerd](https://my.racknerd.com/index.php?rp=/store/black-friday-2022)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
@@ -332,3 +333,20 @@ runcmd:
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
 |Ubuntu      | 20.04           | success   |2020-11-??|
+
+### RackNerd
+Remember that the SSH keys are not automatically generated/uploaded,
+so you need to create them as usual with `ssh-keygen` or some other means,
+add the public key to the `.ssh/authorized_keys` file on the remote host,
+and have a copy of the private key on your local box.
+
+On RackNerd's Ubuntu 20.04, there's no `curl` by default, so `wget -O-` needs to be used instead:
+```command
+# wget -O- https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-22.11 bash -x
+```
+
+#### Tested on
+|Distribution| Name   | Status                     |   test date|
+|------------|--------|----------------------------|------------|
+|AlmaLinux   | 8      | _failure (`tar` missing)_  | 2023-08-29 |
+|Ubuntu      | 20.04  | **success**                | 2023-08-29 |
