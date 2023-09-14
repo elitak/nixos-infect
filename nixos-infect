@@ -21,6 +21,7 @@ makeConf() {
   for trypath in /root/.ssh/authorized_keys /home/$SUDO_USER/.ssh/authorized_keys $HOME/.ssh/authorized_keys; do
       [[ -r "$trypath" ]] \
       && keys=$(sed -E 's/^.*((ssh|ecdsa)-[^[:space:]]+)[[:space:]]+([^[:space:]]+)([[:space:]]*.*)$/\1 \3\4/' "$trypath") \
+      && [[ ! -z "$keys" ]] \
       && break
   done
   local network_import=""
@@ -39,9 +40,11 @@ makeConf() {
   networking.hostName = "$(hostname -s)";
   networking.domain = "$(hostname -d)";
   services.openssh.enable = true;
-  users.users.root.openssh.authorizedKeys.keys = [$(while read -r line; do echo -n "
-    \"$line\" "; done <<< "$keys")
-  ];
+  users.users.root.openssh.authorizedKeys.keys = [$(while read -r line; do
+    line=$(echo -n "$line" | sed 's/\r//g')
+    trimmed_line=$(echo -n "$line" | tr -d '[:space:]')
+    echo -n "''$trimmed_line'' "
+  done <<< "$keys")];
 }
 EOF
 
@@ -108,7 +111,7 @@ makeNetworkingConf() {
     eth1_ip4s=$(ip address show dev "$eth1_name" | grep 'inet ' | sed -r 's|.*inet ([0-9.]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|')
     eth1_ip6s=$(ip address show dev "$eth1_name" | grep 'inet6 ' | sed -r 's|.*inet6 ([0-9a-f:]+)/([0-9]+).*|{ address="\1"; prefixLength=\2; }|' || '')
     ether1=$(ip address show dev "$eth1_name" | grep link/ether | sed -r 's|.*link/ether ([0-9a-f:]+) .*|\1|')
-    interfaces1=<< EOF
+    interfaces1=$(cat << EOF
       $eth1_name = {
         ipv4.addresses = [$(for a in "${eth1_ip4s[@]}"; do echo -n "
           $a"; done)
@@ -116,7 +119,9 @@ makeNetworkingConf() {
         ipv6.addresses = [$(for a in "${eth1_ip6s[@]}"; do echo -n "
           $a"; done)
         ];
+        };
 EOF
+)
     extraRules1="ATTR{address}==\"${ether1}\", NAME=\"${eth1_name}\""
   else
     interfaces1=""
@@ -322,6 +327,12 @@ infect() {
   nix-channel --remove nixpkgs
   nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
   nix-channel --update
+
+  if [[ $NIXOS_CONFIG = http* ]]
+  then
+    curl $NIXOS_CONFIG -o /etc/nixos/configuration.nix
+    unset NIXOS_CONFIG
+  fi
 
   export NIXOS_CONFIG="${NIXOS_CONFIG:-/etc/nixos/configuration.nix}"
 

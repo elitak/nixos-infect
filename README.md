@@ -24,6 +24,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Windcloud](https://windcloud.de/)
 * [Clouding.io](https://clouding.io)
 * [Scaleway](https://scaleway.com)
+* [RackNerd](https://my.racknerd.com/index.php?rp=/store/black-friday-2022)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
@@ -117,7 +118,8 @@ runcmd:
 |Ubuntu      |18.04.3 (LTS) x64|**success**|2020-03-30|
 |Ubuntu      |19.10 x64        |**success**|2020-03-30|
 |Ubuntu      |20.04 x64        |**success**|2022-03-23|
-|Ubuntu      |22.04 x64        |**success**|2022-10-14|
+|Ubuntu      |22.04 x64        |**success**|2023-06-05|
+|Ubuntu      |22.10 x64        | _failure_ |2023-06-05|
 
 ### Vultr
 To set up a NixOS Vultr server, instantiate an Ubuntu box with the following "Cloud-Init User-Data":
@@ -152,8 +154,10 @@ runcmd:
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
 | Debian     | 11              |**success**|2023-04-29|
+| Debian     | 12    aarch64   |**success**|2023-09-02|
 | Ubuntu     | 20.04 x64       |**success**|(Unknown) |
 | Ubuntu     | 22.04 x64       |**success**|2023-04-29|
+| Ubuntu     | 22.04 aarch64   |**success**|2023-04-16|
 
 ### InterServer VPS
 
@@ -187,6 +191,17 @@ Before executing the install script, you may need to check your mounts with `df 
 |Debian      | 10                |**success**|2021-04-29|
 |Debian      | 11                |**success**|2021-11-17|
 |Ubuntu      | 22.04             |**success**|2022-06-19|
+|Ubuntu      | 23.04             |**Fails**  |2023-06-01|
+
+The 23.04 Ubuntu distribution fails to boot, due to the following error:
+
+```
+/dev/sda1 has unsupported feature(s): FEATURE_C12
+
+e2fsck: Get a newer version of e2fsck
+```
+
+Using an older Ubuntu version fixes this issue.
 
 ### Oracle Cloud Infrastructure
 Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) instances.
@@ -202,10 +217,14 @@ Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) i
 |Oracle Linux| 7.9[1]          |**success**|2022-04-19| free amd |
 |Ubuntu      | 22.04           |**success**|2022-11-13| free arm |
 |Oracle Linux| 9.1[2]          |**success**|2023-03-29| free arm |
+|Oracle Linux| 8.7[3]          |**success**|2023-06-06| free amd |
+|AlmaLinux OS| 9.2.20230516    |**success**|2023-07-05| free arm |
 
     [1] The Oracle 7.9 layout has 200Mb for /boot 8G for swap
     PR#100 Adopted 8G Swap device
     [2] OL9.1 had 2GB /boot, 100MB /boot/efi (nixos used as /boot) and swapfile
+    [3] Both 22.11 and 23.05 failed to boot, but installing 22.05 and then upgrading
+    worked out as intended.
 
 ### Aliyun ECS
 Aliyun ECS tested on ecs.s6-c1m2.large, region **cn-shanghai**, needs a few tweaks:
@@ -321,3 +340,20 @@ runcmd:
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
 |Ubuntu      | 20.04           | success   |2020-11-??|
+
+### RackNerd
+Remember that the SSH keys are not automatically generated/uploaded,
+so you need to create them as usual with `ssh-keygen` or some other means,
+add the public key to the `.ssh/authorized_keys` file on the remote host,
+and have a copy of the private key on your local box.
+
+On RackNerd's Ubuntu 20.04, there's no `curl` by default, so `wget -O-` needs to be used instead:
+```command
+# wget -O- https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-22.11 bash -x
+```
+
+#### Tested on
+|Distribution| Name   | Status                     |   test date|
+|------------|--------|----------------------------|------------|
+|AlmaLinux   | 8      | _failure (`tar` missing)_  | 2023-08-29 |
+|Ubuntu      | 20.04  | **success**                | 2023-08-29 |
