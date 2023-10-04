@@ -4,6 +4,12 @@
 
 set -e -o pipefail
 
+autodetectProvider() {
+  if [ -e /etc/hetzner-build ]; then
+    PROVIDER="hetznercloud"
+  fi
+}
+
 makeConf() {
   # Skip everything if main config already present
   [[ -e /etc/nixos/configuration.nix ]] && return 0
@@ -373,6 +379,10 @@ infect() {
   fi
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
+
+if [ ! -v PROVIDER ]; then
+  autodetectProvider
+fi
 
 [ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
 [ "$PROVIDER" = "lightsail" ] && newrootfslabel="nixos"
