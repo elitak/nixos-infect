@@ -106,7 +106,7 @@ runcmd:
 |CoreOS      |2430.0.0 (alpha) | _unable_  |2020-03-30|
 |Debian      |10.3 x64         |**success**|2020-03-30|
 |Debian      |9.12 x64         |**success**|2020-03-30|
-|Debian      |11   x64         |**success**|2023-11-21|
+|Debian      |11   x64         |**success**|2023-11-12|
 |Fedora      |30 x64           |**success**|2020-03-30|
 |Fedora      |31 x64           |**success**|2020-03-30|
 |FreeBSD     |11.3 x64 ufs     | _failure_ |2020-03-30|
