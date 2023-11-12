@@ -256,6 +256,8 @@ Requred some Xen modules to work out, after that NixOS erected itself without a 
 #### Tested on
 |Distribution.                        |       Name      | Status    | test date|
 |-------------------------------------|-----------------|-----------|----------|
+| Debian on e2-micro                  | 11              |success    |2023-11-12|
+| Ubuntu on e2-micro                  | 20.04           |-failure-  |2023-11-12|
 | Ubuntu on Ampere Altra (Arm64)      | 20.04           |**success**|2022-09-07|
 
 ### Contabo
