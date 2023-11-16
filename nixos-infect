@@ -50,12 +50,13 @@ EOF
 
   if isEFI; then
     bootcfg=$(cat << EOF
+  boot.loader.efi.efiSysMountPoint = "$espMountPoint";
   boot.loader.grub = {
     efiSupport = true;
     efiInstallAsRemovable = true;
     device = "nodev";
   };
-  fileSystems."/boot" = { device = "$esp"; fsType = "vfat"; };
+  fileSystems."$espMountPoint" = { device = "$esp"; fsType = "vfat"; };
 EOF
 )
   else
@@ -367,15 +368,17 @@ infect() {
 
   mv -v /boot /boot.bak || { cp -a /boot /boot.bak ; rm -rf /boot/* ; umount /boot ; }
   if isEFI; then
-    mkdir -p /boot
-    mount "$esp" /boot
-    find /boot -depth ! -path /boot -exec rm -rf {} +
+    mkdir -p "$espMountPoint"
+    mount "$esp" "$espMountPoint"
+    find "$espMountPoint" -depth ! -path "$espMountPoint" -exec rm -rf {} +
   fi
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
 
+espMountPoint="/boot"
 [ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
 [ "$PROVIDER" = "lightsail" ] && newrootfslabel="nixos"
+[ "$PROVIDER" = "oraclecloud" ] && espMountPoint="/boot/efi"
 if [[ "$PROVIDER" = "digitalocean" ]] || [[ "$PROVIDER" = "servarica" ]] || [[ "$PROVIDER" = "hetznercloud" ]]; then
 	doNetConf=y # some providers require detailed network config to be generated
 fi

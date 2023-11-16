@@ -204,9 +204,17 @@ e2fsck: Get a newer version of e2fsck
 Using an older Ubuntu version fixes this issue.
 
 ### Oracle Cloud Infrastructure
-Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) instances.
+Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) instances. 
+
+Standard images come with a small 100MB `/boot/efi` partition, that is too small to hold the kernel.
+Make sure to set `PROVIDER=oraclecloud` to avoid mounting that partition as `/boot`.
+
+```
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=oraclecloud NIX_CHANNEL=nixos-22.11 bash
+```
 
 #### Tested on
+
 |Distribution|       Name      | Status    | test date|   Shape  |
 |------------|-----------------|-----------|----------|----------|
 |Oracle Linux| 7.9             |**success**|2021-05-31|          |
@@ -215,15 +223,17 @@ Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) i
 |Oracle Linux| 8.0             | -failure- |2022-04-19| free amd |
 |CentOS      | 8.0             | -failure- |2022-04-19| free amd |
 |Oracle Linux| 7.9[1]          |**success**|2022-04-19| free amd |
-|Ubuntu      | 22.04           |**success**|2022-11-13| free arm |
-|Oracle Linux| 9.1[2]          |**success**|2023-03-29| free arm |
-|Oracle Linux| 8.7[3]          |**success**|2023-06-06| free amd |
+|Ubuntu      | 22.04[2]        |**success**|2023-11-16| free arm |
+|Ubuntu      | 22.04[2]        |**success**|2023-11-16| free amd |
+|Oracle Linux| 9.1[3]          |**success**|2023-03-29| free arm |
+|Oracle Linux| 8.7[4]          |**success**|2023-06-06| free amd |
 |AlmaLinux OS| 9.2.20230516    |**success**|2023-07-05| free arm |
 
     [1] The Oracle 7.9 layout has 200Mb for /boot 8G for swap
     PR#100 Adopted 8G Swap device
-    [2] OL9.1 had 2GB /boot, 100MB /boot/efi (nixos used as /boot) and swapfile
-    [3] Both 22.11 and 23.05 failed to boot, but installing 22.05 and then upgrading
+    [2] Ubuntu 22.04 Minimal has the best layout: 100MB /boot/efi, no boot, no swap
+    [3] OL9.1 had 2GB /boot (unused), 100MB /boot/efi and swapfile
+    [4] Both 22.11 and 23.05 failed to boot, but installing 22.05 and then upgrading
     worked out as intended.
 
 ### Aliyun ECS
