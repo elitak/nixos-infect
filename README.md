@@ -333,13 +333,13 @@ write_files:
       environment.systemPackages = with pkgs; [ tmux ];
     }
 runcmd:
-  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect |  NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-22.10 bash 2>&1 | tee /tmp/infect.log
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect |  NIXOS_IMPORT=./host.nix bash 2>&1 | tee /tmp/infect.log
 ```
 
 #### Tested on
 |Distribution|       Name      | Status    | test date|
 |------------|-----------------|-----------|----------|
-|Ubuntu      | 20.04           | success   |2020-11-??|
+|Ubuntu      | 22.04           | success   |2023-11-25|
 
 ### RackNerd
 Remember that the SSH keys are not automatically generated/uploaded,
