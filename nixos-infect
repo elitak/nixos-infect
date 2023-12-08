@@ -20,7 +20,7 @@ makeConf() {
   local IFS=$'\n'
   for trypath in /root/.ssh/authorized_keys /home/$SUDO_USER/.ssh/authorized_keys $HOME/.ssh/authorized_keys; do
       [[ -r "$trypath" ]] \
-      && keys=$(sed -E 's/^.*((ssh|ecdsa)-[^[:space:]]+)[[:space:]]+([^[:space:]]+)([[:space:]]*.*)$/\1 \3\4/' "$trypath") \
+      && keys=$(sed -E 's/^.*?((ssh|ecdsa|sk-ssh|sk-ecdsa)-[^[:space:]]+)[[:space:]]+([^[:space:]]+)([[:space:]]*.*)$/\1 \3\4/' "$trypath") \
       && [[ ! -z "$keys" ]] \
       && break
   done
