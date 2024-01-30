@@ -337,7 +337,7 @@ infect() {
   export NIXOS_CONFIG="${NIXOS_CONFIG:-/etc/nixos/configuration.nix}"
 
   nix-env --set \
-    -I nixpkgs=$HOME/.nix-defexpr/channels/nixos \
+    -I nixpkgs=$(realpath $HOME/.nix-defexpr/channels/nixos) \
     -f '<nixpkgs/nixos>' \
     -p /nix/var/nix/profiles/system \
     -A system
