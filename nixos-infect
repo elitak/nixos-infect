@@ -45,6 +45,7 @@ makeConf() {
     trimmed_line=$(echo -n "$line" | xargs)
     echo -n "''$trimmed_line'' "
   done <<< "$keys")];
+  system.stateVersion = "23.11";
 }
 EOF
 
