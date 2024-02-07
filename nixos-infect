@@ -375,7 +375,6 @@ infect() {
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
 
-[ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
 [ "$PROVIDER" = "lightsail" ] && newrootfslabel="nixos"
 if [[ "$PROVIDER" = "digitalocean" ]] || [[ "$PROVIDER" = "servarica" ]] || [[ "$PROVIDER" = "hetznercloud" ]]; then
 	doNetConf=y # some providers require detailed network config to be generated
