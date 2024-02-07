@@ -43,8 +43,8 @@ makeConf() {
 
 
   boot.cleanTmpDir = true;
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+  # boot.loader.systemd-boot.enable = true;
+  # boot.loader.efi.canTouchEfiVariables = true;
   zramSwap.enable = ${zramswap};
 
   networking.hostName = "$(hostname -s)";
