@@ -444,8 +444,9 @@ if [[ -z "$NO_SWAP" ]]; then
 fi
 
 makeConf
-bootctl install --graceful # Add necessary boot files.
 infect
+
+bootctl install --graceful # Add necessary boot files.
 
 if [[ -z "$NO_SWAP" ]]; then
 	removeSwap
