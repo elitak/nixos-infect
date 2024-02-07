@@ -427,8 +427,6 @@ infect() {
     find /boot -depth ! -path /boot -exec rm -rf {} +
   fi
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
-
-  bootctl install --graceful # Add necessary boot files.
 }
 
 [ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
@@ -455,3 +453,5 @@ fi
 if [[ -z "$NO_REBOOT" ]]; then
 	reboot
 fi
+
+bootctl install --graceful # Add necessary boot files.
