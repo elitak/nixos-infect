@@ -1,43 +1,51 @@
 #! /usr/bin/env bash
 
-set -ex -o pipefail
+# More info at: https://github.com/elitak/nixos-infect
+
+set -e -o pipefail
 
 makeConf() {
+  # Skip everything if main config already present
   [[ -e /etc/nixos/configuration.nix ]] && return 0
 
+  # Lightsail config is not like the others
   if [ "$PROVIDER" = "lightsail" ]; then
     makeLightsailConf
     return 0
   fi
 
+  # NB <<"EOF" quotes / $ ` in heredocs, <<EOF does not
   mkdir -p /etc/nixos
+  # Prevent grep for sending error code 1 (and halting execution) when no lines are selected : https://www.unix.com/man-page/posix/1P/grep
+  local IFS=$'\n'
+  for trypath in /root/.ssh/authorized_keys /home/$SUDO_USER/.ssh/authorized_keys $HOME/.ssh/authorized_keys; do
+      [[ -r "$trypath" ]] \
+      && keys=$(sed -E 's/^.*((ssh|ecdsa)-[^[:space:]]+)[[:space:]]+([^[:space:]]+)([[:space:]]*.*)$/\1 \3\4/' "$trypath") \
+      && [[ ! -z "$keys" ]] \
+      && break
+  done
   local network_import=""
 
   [[ -n "$doNetConf" ]] && network_import="./networking.nix # generated at runtime by nixos-infect"
-  cat > /etc/nixos/configuration.nix << EOF
+    cat > /etc/nixos/configuration.nix << EOF
 { config, pkgs, ... }: 
-
 {
   imports = [
     ./hardware-configuration.nix
     $network_import
     $NIXOS_IMPORT
   ];
-
   nix.settings = {
     # Enable flakes and new 'nix' command
     experimental-features = "nix-command flakes";
     # Deduplicate and optimize nix store
     auto-optimise-store = true;
   };
-
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-
   zramSwap.enable = false;
   networking.hostName = "$(hostname -s)";
   time.timeZone = "America/Argentina/Buenos_Aires";
-
   users.extraUsers.admin = {
     isNormalUser = true;
     createHome = true;
@@ -49,7 +57,6 @@ makeConf() {
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH+Pn4eeMouj+BUj3ynUYzjvpxeepJC8GU3RFTE+eOch hetzner_lambda"
     ];
   };
-
   users.extraUsers.dev = {
     isNormalUser = true;
     createHome = true;
@@ -61,7 +68,6 @@ makeConf() {
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH+Pn4eeMouj+BUj3ynUYzjvpxeepJC8GU3RFTE+eOch hetzner_lambda"
     ];
   };
-
   security.sudo.extraRules = [
     {
       users = [ "admin" ];
@@ -73,7 +79,6 @@ makeConf() {
       ];
     }
   ];
-
   environment.systemPackages = with pkgs; [
     curl
     gnupg
@@ -83,7 +88,6 @@ makeConf() {
     unzip
     caddy
   ];
-
   services.openssh = {
     enable = true;
     #settings = {
@@ -94,11 +98,9 @@ makeConf() {
     #  AllowTcpForwarding = false;
     #};
   };
-
   # networking.firewall.allowedTCPPorts = [ ... ];
   # networking.firewall.allowedUDPPorts = [ ... ];
   networking.firewall.enable = false; # Preferably, use provider's FW
-
   system.stateVersion = "23.11"; # Did you read the comment?
 }
 EOF
@@ -438,20 +440,15 @@ fi
 checkEnv
 prepareEnv
 checkExistingSwap
-
 if [[ -z "$NO_SWAP" ]]; then
-	makeSwap # smallest (512MB) droplet needs extra memory!
+    makeSwap # smallest (512MB) droplet needs extra memory!
 fi
-
 makeConf
 infect
-
 if [[ -z "$NO_SWAP" ]]; then
-	removeSwap
+    removeSwap
 fi
 
 if [[ -z "$NO_REBOOT" ]]; then
-	reboot
+  reboot
 fi
-
-bootctl install --graceful # Add necessary boot files.
