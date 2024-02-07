@@ -375,10 +375,10 @@ infect() {
 
   curl -L https://nixos.org/nix/install | sh -s -- --no-channel-add
 
-  bootctl install --graceful # Add necessary boot files.
-
   # shellcheck disable=SC1090
   source ~/.nix-profile/etc/profile.d/nix.sh
+
+  bootctl install --graceful # Add necessary boot files.
 
   [[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-23.05"
   nix-channel --remove nixpkgs
