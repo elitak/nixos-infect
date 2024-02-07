@@ -378,8 +378,6 @@ infect() {
   # shellcheck disable=SC1090
   source ~/.nix-profile/etc/profile.d/nix.sh
 
-  bootctl install --graceful # Add necessary boot files.
-
   [[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-23.05"
   nix-channel --remove nixpkgs
   nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
@@ -429,6 +427,8 @@ infect() {
     find /boot -depth ! -path /boot -exec rm -rf {} +
   fi
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
+
+  bootctl install --graceful # Add necessary boot files.
 }
 
 [ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
