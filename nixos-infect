@@ -40,11 +40,14 @@ makeConf() {
     # Deduplicate and optimize nix store
     auto-optimise-store = true;
   };
+  boot.cleanTmpDir = true;
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   zramSwap.enable = false;
+
   networking.hostName = "$(hostname -s)";
   time.timeZone = "America/Argentina/Buenos_Aires";
+  
   users.extraUsers.admin = {
     isNormalUser = true;
     createHome = true;
