@@ -2,7 +2,7 @@
 
 # More info at: https://github.com/elitak/nixos-infect
 
-set -e -o pipefail
+set -ex -o pipefail
 
 makeConf() {
   # Skip everything if main config already present
