@@ -27,7 +27,7 @@ makeConf() {
   local network_import=""
 
   [[ -n "$doNetConf" ]] && network_import="./networking.nix # generated at runtime by nixos-infect"
-    cat > /etc/nixos/configuration.nix << EOF
+  cat > /etc/nixos/configuration.nix << EOF
 { config, pkgs, ... }: 
 {
   imports = [
