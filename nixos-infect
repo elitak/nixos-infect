@@ -94,6 +94,7 @@ makeConf() {
     caddy
   ];
   services.openssh.enable = true;
+  services.tailscale.enable = true;
 
   # networking.firewall.allowedTCPPorts = [ ... ];
   # networking.firewall.allowedUDPPorts = [ ... ];
