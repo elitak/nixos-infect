@@ -40,14 +40,17 @@ makeConf() {
     # Deduplicate and optimize nix store
     auto-optimise-store = true;
   };
+
+
   boot.cleanTmpDir = true;
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-  zramSwap.enable = false;
+  zramSwap.enable = ${zramswap};
 
   networking.hostName = "$(hostname -s)";
+  networking.domain = "$(hostname -d)";
   time.timeZone = "America/Argentina/Buenos_Aires";
-  
+
   users.extraUsers.admin = {
     isNormalUser = true;
     createHome = true;
@@ -90,16 +93,8 @@ makeConf() {
     unzip
     caddy
   ];
-  services.openssh = {
-    enable = true;
-    #settings = {
-    #  PublicKeyAuthentication = true;
-    #  PermitRootLogin = "no";
-    #  PasswordAuthentication = false;
-    #  AllowAgentForwarding = false;
-    #  AllowTcpForwarding = false;
-    #};
-  };
+  services.openssh.enable = true;
+
   # networking.firewall.allowedTCPPorts = [ ... ];
   # networking.firewall.allowedUDPPorts = [ ... ];
   networking.firewall.enable = false; # Preferably, use provider's FW
