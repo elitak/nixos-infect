@@ -41,7 +41,7 @@ makeConf() {
     $NIXOS_IMPORT
   ];
 
-  boot.cleanTmpDir = true;
+  boot.tmp.cleanOnBoot = true;
   zramSwap.enable = ${zramswap};
   networking.hostName = "$(hostname -s)";
   networking.domain = "$(hostname -d)";
