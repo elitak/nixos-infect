@@ -4,6 +4,12 @@
 
 set -e -o pipefail
 
+autodetectProvider() {
+  if [ -e /etc/hetzner-build ]; then
+    PROVIDER="hetznercloud"
+  fi
+}
+
 makeConf() {
   # Skip everything if main config already present
   [[ -e /etc/nixos/configuration.nix ]] && return 0
@@ -20,7 +26,7 @@ makeConf() {
   local IFS=$'\n'
   for trypath in /root/.ssh/authorized_keys /home/$SUDO_USER/.ssh/authorized_keys $HOME/.ssh/authorized_keys; do
       [[ -r "$trypath" ]] \
-      && keys=$(sed -E 's/^.*((ssh|ecdsa)-[^[:space:]]+)[[:space:]]+([^[:space:]]+)([[:space:]]*.*)$/\1 \3\4/' "$trypath") \
+      && keys=$(sed -E 's/^[^#].*[[:space:]]((sk-ssh|sk-ecdsa|ssh|ecdsa)-[^[:space:]]+)[[:space:]]+([^[:space:]]+)([[:space:]]*.*)$/\1 \3\4/' "$trypath") \
       && [[ ! -z "$keys" ]] \
       && break
   done
@@ -35,7 +41,7 @@ makeConf() {
     $NIXOS_IMPORT
   ];
 
-  boot.cleanTmpDir = true;
+  boot.tmp.cleanOnBoot = true;
   zramSwap.enable = ${zramswap};
   networking.hostName = "$(hostname -s)";
   networking.domain = "$(hostname -d)";
@@ -90,9 +96,10 @@ EOF
 makeLightsailConf() {
   mkdir -p /etc/nixos
   cat > /etc/nixos/configuration.nix << EOF
-{ config, pkgs, modulesPath, ... }:
+{ config, pkgs, modulesPath, lib, ... }:
 {
   imports = [ "\${modulesPath}/virtualisation/amazon-image.nix" ];
+  boot.loader.grub.device = lib.mkForce "/dev/nvme0n1";
 }
 EOF
 }
@@ -318,8 +325,8 @@ infect() {
   # TODO use addgroup and adduser as fallbacks
   #addgroup nixbld -g 30000 || true
   #for i in {1..10}; do adduser -DH -G nixbld nixbld$i || true; done
-
-  curl -L https://nixos.org/nix/install | sh -s -- --no-channel-add
+  NIX_INSTALL_URL="${NIX_INSTALL_URL:-https://nixos.org/nix/install}"
+  curl -L "${NIX_INSTALL_URL}" | sh -s -- --no-channel-add
 
   # shellcheck disable=SC1090
   source ~/.nix-profile/etc/profile.d/nix.sh
@@ -338,7 +345,7 @@ infect() {
   export NIXOS_CONFIG="${NIXOS_CONFIG:-/etc/nixos/configuration.nix}"
 
   nix-env --set \
-    -I nixpkgs=$HOME/.nix-defexpr/channels/nixos \
+    -I nixpkgs=$(realpath $HOME/.nix-defexpr/channels/nixos) \
     -f '<nixpkgs/nixos>' \
     -p /nix/var/nix/profiles/system \
     -A system
@@ -375,6 +382,11 @@ infect() {
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
 
+if [ ! -v PROVIDER ]; then
+  autodetectProvider
+fi
+
+[ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
 [ "$PROVIDER" = "lightsail" ] && newrootfslabel="nixos"
 if [[ "$PROVIDER" = "digitalocean" ]] || [[ "$PROVIDER" = "servarica" ]] || [[ "$PROVIDER" = "hetznercloud" ]]; then
 	doNetConf=y # some providers require detailed network config to be generated
