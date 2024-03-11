@@ -4,6 +4,12 @@
 
 set -e -o pipefail
 
+autodetectProvider() {
+  if [ -e /etc/hetzner-build ]; then
+    PROVIDER="hetznercloud"
+  fi
+}
+
 makeConf() {
   # Skip everything if main config already present
   [[ -e /etc/nixos/configuration.nix ]] && return 0
@@ -20,7 +26,7 @@ makeConf() {
   local IFS=$'\n'
   for trypath in /root/.ssh/authorized_keys /home/$SUDO_USER/.ssh/authorized_keys $HOME/.ssh/authorized_keys; do
       [[ -r "$trypath" ]] \
-      && keys=$(sed -E 's/^.*((ssh|ecdsa)-[^[:space:]]+)[[:space:]]+([^[:space:]]+)([[:space:]]*.*)$/\1 \3\4/' "$trypath") \
+      && keys=$(sed -E 's/^[^#].*[[:space:]]((sk-ssh|sk-ecdsa|ssh|ecdsa)-[^[:space:]]+)[[:space:]]+([^[:space:]]+)([[:space:]]*.*)$/\1 \3\4/' "$trypath") \
       && [[ ! -z "$keys" ]] \
       && break
   done
@@ -35,7 +41,7 @@ makeConf() {
     $NIXOS_IMPORT
   ];
 
-  boot.cleanTmpDir = true;
+  boot.tmp.cleanOnBoot = true;
   zramSwap.enable = ${zramswap};
   networking.hostName = "$(hostname -s)";
   networking.domain = "$(hostname -d)";
@@ -45,6 +51,7 @@ makeConf() {
     trimmed_line=$(echo -n "$line" | xargs)
     echo -n "''$trimmed_line'' "
   done <<< "$keys")];
+  system.stateVersion = "23.11";
 }
 EOF
 
@@ -89,9 +96,10 @@ EOF
 makeLightsailConf() {
   mkdir -p /etc/nixos
   cat > /etc/nixos/configuration.nix << EOF
-{ config, pkgs, modulesPath, ... }:
+{ config, pkgs, modulesPath, lib, ... }:
 {
   imports = [ "\${modulesPath}/virtualisation/amazon-image.nix" ];
+  boot.loader.grub.device = lib.mkForce "/dev/nvme0n1";
 }
 EOF
 }
@@ -337,7 +345,7 @@ infect() {
   export NIXOS_CONFIG="${NIXOS_CONFIG:-/etc/nixos/configuration.nix}"
 
   nix-env --set \
-    -I nixpkgs=$HOME/.nix-defexpr/channels/nixos \
+    -I nixpkgs=$(realpath $HOME/.nix-defexpr/channels/nixos) \
     -f '<nixpkgs/nixos>' \
     -p /nix/var/nix/profiles/system \
     -A system
@@ -373,6 +381,10 @@ infect() {
   fi
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
+
+if [ ! -v PROVIDER ]; then
+  autodetectProvider
+fi
 
 [ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
 [ "$PROVIDER" = "lightsail" ] && newrootfslabel="nixos"

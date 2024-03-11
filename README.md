@@ -55,7 +55,7 @@ and most importantly, simply didn't work for me!
 
 4) run the script with:
 ```
-  curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-22.11 bash -x
+  curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-23.05 bash -x
 ```
 
 *NB*: This script wipes out the targeted host's root filesystem when it runs to completion.
@@ -72,7 +72,7 @@ and supply to it the following example yaml stanzas:
 #cloud-config
 
 runcmd:
-  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIX_CHANNEL=nixos-22.11 bash 2>&1 | tee /tmp/infect.log
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIX_CHANNEL=nixos-23.05 bash 2>&1 | tee /tmp/infect.log
 ```
 
 #### Potential tweaks:
@@ -90,7 +90,7 @@ write_files:
       environment.systemPackages = with pkgs; [ vim ];
     }
 runcmd:
-  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-22.11 bash 2>&1 | tee /tmp/infect.log
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-23.05 bash 2>&1 | tee /tmp/infect.log
 ```
 
 
@@ -106,6 +106,7 @@ runcmd:
 |CoreOS      |2430.0.0 (alpha) | _unable_  |2020-03-30|
 |Debian      |10.3 x64         |**success**|2020-03-30|
 |Debian      |9.12 x64         |**success**|2020-03-30|
+|Debian      |11   x64         |**success**|2023-11-12|
 |Fedora      |30 x64           |**success**|2020-03-30|
 |Fedora      |31 x64           |**success**|2020-03-30|
 |FreeBSD     |11.3 x64 ufs     | _failure_ |2020-03-30|
@@ -120,6 +121,7 @@ runcmd:
 |Ubuntu      |20.04 x64        |**success**|2022-03-23|
 |Ubuntu      |22.04 x64        |**success**|2023-06-05|
 |Ubuntu      |22.10 x64        | _failure_ |2023-06-05|
+|Ubuntu      |23.10 x64        | _failure_ |2023-11-16|
 
 ### Vultr
 To set up a NixOS Vultr server, instantiate an Ubuntu box with the following "Cloud-Init User-Data":
@@ -127,7 +129,7 @@ To set up a NixOS Vultr server, instantiate an Ubuntu box with the following "Cl
 ```bash
 #!/bin/sh
 
-curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-22.11 bash
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-23.05 bash
 ```
 
 Allow for a few minutes over the usual Ubuntu deployment time for NixOS to download & install itself.
@@ -147,7 +149,7 @@ When creating a server provide the following yaml as "Cloud config":
 #cloud-config
 
 runcmd:
-  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=hetznercloud NIX_CHANNEL=nixos-22.11 bash 2>&1 | tee /tmp/infect.log
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=hetznercloud NIX_CHANNEL=nixos-23.05 bash 2>&1 | tee /tmp/infect.log
 ```
 
 #### Tested on
@@ -254,11 +256,13 @@ Requred some Xen modules to work out, after that NixOS erected itself without a 
 ### Google Cloud Platform
 
 #### Tested on
-|Distribution |       Name      | Status    | test date| Machine type |
-|-------------|-----------------|-----------|----------|--------------|
-| Debian      | 11              |**success**|2023-11-12|ec2-micro     |
-| Ubuntu      | 20.04           |-failure-  |2023-11-12|ec2-micro     |
-| Ubuntu      | 20.04           |**success**|2022-09-07|Ampere Ultra  |
+|Distribution                         |       Name      | Status    | test date| Machine type |
+|-------------------------------------|-----------------|-----------|----------|--------------|
+| Debian                              | 11              |**success**|2023-11-12|ec2-micro     |
+| Debian (Amd64)                      | 11              |**success**|2023-11-12|              |
+| Ubuntu on Ampere Altra (Arm64)      | 20.04           |**success**|2022-09-07|              |
+| Ubuntu                              | 20.04           |**success**|2022-09-07|Ampere Ultra  |
+| Ubuntu                              | 20.04           |-failure-  |2023-11-12|ec2-micro     |
 
 ### Contabo
 Tested on Cloud VPS. Contabo sets the hostname to something like `vmi######.contaboserver.net`, Nixos only allows RFC 1035 compliant hostnames ([see here](https://search.nixos.org/options?show=networking.hostName&query=hostname)). Run `hostname something_without_dots` before running the script. If you run the script before changing the hostname - remove the `/etc/nixos/configuration.nix` so it's regenerated with the new hostname.
@@ -276,7 +280,7 @@ build time or using `ssh-copy-id` before running nixos-infect
 ```
 #!/bin/sh
 
-curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-22.11 bash 2>&1 | tee /tmp/infect.log
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-23.05 bash 2>&1 | tee /tmp/infect.log
 ```
 
 #### Tested on
@@ -304,7 +308,7 @@ Tested on vServer. The network configuration seems to be important so the same t
 ### ServArica
 Requires the same static network settings that Digital Ocean does.
 
-    curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=servarica NIX_CHANNEL=nixos-22.11 bash
+    curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=servarica NIX_CHANNEL=nixos-23.05 bash
 
 #### Tested on
 |Distribution|       Name      | Status    | test date|
@@ -335,7 +339,7 @@ write_files:
       environment.systemPackages = with pkgs; [ tmux ];
     }
 runcmd:
-  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect |  NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-22.10 bash 2>&1 | tee /tmp/infect.log
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect |  NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-23.05 bash 2>&1 | tee /tmp/infect.log
 ```
 
 #### Tested on
@@ -351,7 +355,7 @@ and have a copy of the private key on your local box.
 
 On RackNerd's Ubuntu 20.04, there's no `curl` by default, so `wget -O-` needs to be used instead:
 ```command
-# wget -O- https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-22.11 bash -x
+# wget -O- https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-23.05 bash -x
 ```
 
 #### Tested on
