@@ -106,6 +106,7 @@ runcmd:
 |CoreOS      |2430.0.0 (alpha) | _unable_  |2020-03-30|
 |Debian      |10.3 x64         |**success**|2020-03-30|
 |Debian      |9.12 x64         |**success**|2020-03-30|
+|Debian      |11   x64         |**success**|2023-11-12|
 |Fedora      |30 x64           |**success**|2020-03-30|
 |Fedora      |31 x64           |**success**|2020-03-30|
 |FreeBSD     |11.3 x64 ufs     | _failure_ |2020-03-30|
@@ -257,7 +258,7 @@ Requred some Xen modules to work out, after that NixOS erected itself without a 
 |Distribution.                        |       Name      | Status    | test date|
 |-------------------------------------|-----------------|-----------|----------|
 | Ubuntu on Ampere Altra (Arm64)      | 20.04           |**success**|2022-09-07|
-
+| Debian (Amd64)                      | 11              |**success**|2023-11-12|
 ### Contabo
 Tested on Cloud VPS. Contabo sets the hostname to something like `vmi######.contaboserver.net`, Nixos only allows RFC 1035 compliant hostnames ([see here](https://search.nixos.org/options?show=networking.hostName&query=hostname)). Run `hostname something_without_dots` before running the script. If you run the script before changing the hostname - remove the `/etc/nixos/configuration.nix` so it's regenerated with the new hostname.
 
