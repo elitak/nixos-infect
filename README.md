@@ -25,6 +25,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Clouding.io](https://clouding.io)
 * [Scaleway](https://scaleway.com)
 * [RackNerd](https://my.racknerd.com/index.php?rp=/store/black-friday-2022)
+* [Aeza](https://aeza.net/)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
@@ -363,3 +364,15 @@ On RackNerd's Ubuntu 20.04, there's no `curl` by default, so `wget -O-` needs to
 |------------|--------|----------------------------|------------|
 |AlmaLinux   | 8      | _failure (`tar` missing)_  | 2023-08-29 |
 |Ubuntu      | 20.04  | **success**                | 2023-08-29 |
+
+### Aeza
+Aeza works with `doNetConf=y` parameter:
+
+```command
+# curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-23.05 doNetConf=y bash -x
+```
+
+#### Tested on
+|Distribution| Name   | Status                     |   test date|
+|------------|--------|----------------------------|------------|
+|Debian      | 12     | **success**                | 2024-03-18 |
