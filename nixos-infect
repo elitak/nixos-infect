@@ -1,4 +1,4 @@
-#! /usr/bin/env bash
+#!/usr/bin/env bash
 
 # More info at: https://github.com/elitak/nixos-infect
 
