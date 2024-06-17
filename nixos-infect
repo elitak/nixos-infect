@@ -338,7 +338,7 @@ infect() {
 
   if [[ $NIXOS_CONFIG = http* ]]
   then
-    curl $NIXOS_CONFIG -o /etc/nixos/configuration.nix
+    curl -L $NIXOS_CONFIG -o /etc/nixos/configuration.nix
     unset NIXOS_CONFIG
   fi
 
