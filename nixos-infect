@@ -224,7 +224,7 @@ findESP() {
       && esp="$(df "$d" --output=source | sed 1d)" \
       && break
   done
-  [[ -z "$esp" ]] && { echo "ERROR: No ESP mount point found"; return 1; }
+  [[ -z "$esp" ]] && { echo "WARNING: No ESP mount point found"; return 1; }
   for uuid in /dev/disk/by-uuid/*; do
     [[ $(readlink -f "$uuid") == "$esp" ]] && echo $uuid && return 0
   done
@@ -232,9 +232,8 @@ findESP() {
 
 prepareEnv() {
   # $esp and $grubdev are used in makeConf()
-  if isEFI; then
-    esp="$(findESP)"
-  else
+  esp="$(findESP)"
+  if ! isEFI; then
     for grubdev in /dev/vda /dev/sda /dev/xvda /dev/nvme0n1 ; do [[ -e $grubdev ]] && break; done
   fi
 
@@ -371,7 +370,7 @@ infect() {
   (cd / && ls etc/ssh/ssh_host_*_key* || true) >> /etc/NIXOS_LUSTRATE
 
   rm -rf /boot.bak
-  isEFI && umount "$esp"
+  [[ -z "$esp" ]] || umount "$esp"
 
   mv -v /boot /boot.bak || { cp -a /boot /boot.bak ; rm -rf /boot/* ; umount /boot ; }
   if isEFI; then
