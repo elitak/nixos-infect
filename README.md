@@ -122,6 +122,8 @@ runcmd:
 |Ubuntu      |22.04 x64        |**success**|2023-06-05|
 |Ubuntu      |22.10 x64        | _failure_ |2023-06-05|
 |Ubuntu      |23.10 x64        | _failure_ |2023-11-16|
+|Ubuntu      |24.04 x64        |**success**|2024-07-03|
+
 
 ### Vultr
 To set up a NixOS Vultr server, instantiate an Ubuntu box with the following "Cloud-Init User-Data":
