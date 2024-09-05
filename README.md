@@ -25,6 +25,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Clouding.io](https://clouding.io)
 * [Scaleway](https://scaleway.com)
 * [RackNerd](https://my.racknerd.com/index.php?rp=/store/black-friday-2022)
+* [Severs.com](https://servers.com)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
