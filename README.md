@@ -368,6 +368,8 @@ On RackNerd's Ubuntu 20.04, there's no `curl` by default, so `wget -O-` needs to
 Remember that you can not add SSH keys to the root user trough the web interface,
 manually add a public key to `/root/.ssh/authorized_keys`.
 
+Make sure to set `PROVIDER=webdock`
+
 #### Tested on
 |Distribution| Name   | Status    | test date|
 |------------|--------|-----------|----------|
