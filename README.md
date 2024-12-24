@@ -237,6 +237,7 @@ Aliyun ECS tested on ecs.s6-c1m2.large, region **cn-shanghai**, needs a few twea
 |------------|-----------------|-----------|----------|
 |Ubuntu      | 20.04           |**success**|2021-12-28|
 |Ubuntu      | 22.04           |**success**|2023-04-05|
+|Debian      | 12.4            |**success**|2024-12-24|
 
 
 ### GalaxyGate
