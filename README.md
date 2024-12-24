@@ -52,6 +52,7 @@ and most importantly, simply didn't work for me!
 > *NB:* This step is important.
 > The root user will not have a password when nixos-infect runs to completion.
 > To enable root login, you *must* have an SSH key configured.
+> If a custom SSH port is used, it will be reverted back to 22.
 
 4) run the script with:
 ```
