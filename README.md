@@ -1,5 +1,7 @@
 # NixOS-Infect
+This repository has been updated by @jr551, who merged contributions from several pull requests that had been sitting for approval. These contributions include important fixes, documentation updates, and support for additional hosting providers. Big thanks to all the contributors who made these improvements possible!
 
+Should you find that it works on your hoster, feel free to update this README and issue a pull request.
 ## What is this?
 A script to install NixOS on non-NixOS hosts.
 
@@ -56,7 +58,7 @@ and most importantly, simply didn't work for me!
 
 4) run the script with:
 ```
-  curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-23.05 bash -x
+  curl https://raw.githubusercontent.com/jr551/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-23.05 bash -x
 ```
 
 *NB*: This script wipes out the targeted host's root filesystem when it runs to completion.
