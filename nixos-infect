@@ -317,7 +317,15 @@ checkEnv() {
 
 infect() {
   # Add nix build users
+  
+  # Ensure kernel.unprivileged_userns_clone is enabled to prevent issues where
+  # certain commands (e.g., `id`) fail to resolve group names for higher GIDs.
+  # This setting is particularly important for environments where user namespaces
+  # are restricted, which can lead to failures during the infection process.
+  sysctl kernel.unprivileged_userns_clone=1
+
   # FIXME run only if necessary, rather than defaulting true
+  
   groupadd nixbld -g 30000 || true
   for i in {1..10}; do
     useradd -c "Nix build user $i" -d /var/empty -g nixbld -G nixbld -M -N -r -s "$(which nologin)" "nixbld$i" || true
