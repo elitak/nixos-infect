@@ -390,7 +390,7 @@ infect() {
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
 
-if [ ! -v PROVIDER ]; then
+if [ ! -v $PROVIDER ]; then
   autodetectProvider
 fi
 
