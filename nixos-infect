@@ -62,7 +62,7 @@ makeConf() {
     uid = 1000;
     group = "users";
     openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPGTH2Nm14VMFsPT6qyLp7sSvUmO58wJ5mss+WYdc1hY tomascasagrande"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC05WKSq0JZYnmRoNrKMtxnxdcI4DaJH8VcHYVF/QRDv tomicasagrande"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH+Pn4eeMouj+BUj3ynUYzjvpxeepJC8GU3RFTE+eOch hetzner_lambda"
     ];
   };
@@ -73,7 +73,7 @@ makeConf() {
     uid = 1001;
     group = "users";
     openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPGTH2Nm14VMFsPT6qyLp7sSvUmO58wJ5mss+WYdc1hY tomascasagrande"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC05WKSq0JZYnmRoNrKMtxnxdcI4DaJH8VcHYVF/QRDv tomicasagrande"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH+Pn4eeMouj+BUj3ynUYzjvpxeepJC8GU3RFTE+eOch hetzner_lambda"
     ];
   };
@@ -95,7 +95,6 @@ makeConf() {
     git
     zip
     unzip
-    caddy
   ];
   services.openssh.enable = true;
   services.tailscale.enable = true;
