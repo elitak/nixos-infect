@@ -88,6 +88,11 @@ makeConf() {
       ];
     }
   ];
+
+  environment.shellAliases = {
+    rebuild = "sudo nixos-rebuild switch";
+  };
+
   environment.systemPackages = with pkgs; [
     curl
     gnupg
