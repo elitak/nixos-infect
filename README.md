@@ -27,9 +27,7 @@ runcmd:
   - curl https://raw.githubusercontent.com/lambdaclass/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-24.11 bash 2>&1 | tee /tmp/infect.log
 ```
 ## Important Notes
-- Execution Halts on Errors: Any errors will stop the process to prevent further inconsistencies.
-- Debug Mode: Use the `bash -x` option to enable verbose output for debugging.
+Execution Halts on Errors: Any errors will stop the process to prevent further inconsistencies.
 
-Acknowledgements
-
-We extend our gratitude to @elitak for their original work on NixOS-Infect, which inspired this version.
+## Acknowledgements
+We extend our gratitude to [@elitak](https://github.com/elitak/) for their original work on [nixos-infect](https://github.com/elitak/nixos-infect), which inspired this version.
