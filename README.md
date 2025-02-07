@@ -4,7 +4,7 @@ NixOS-Infect is a tool designed to automate the installation of [NixOS](https://
 
 ## Overview
 
-It allows DevOps to seamlessly migrate Linux systems to NixOS, empowering teams to leverage its declarative configuration model and package management.
+It allows DevOps to seamlessly migrate Linux systems to NixOS.
 
 ## Usage Guide
 
@@ -28,8 +28,7 @@ runcmd:
 ```
 ## Important Notes
 - Execution Halts on Errors: Any errors will stop the process to prevent further inconsistencies.
-- Debug Mode: Use the bash -x option to enable verbose output for debugging.
-- Ensure network connectivity and proper access permissions before running the script.
+- Debug Mode: Use the `bash -x` option to enable verbose output for debugging.
 
 Acknowledgements
 
