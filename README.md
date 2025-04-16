@@ -363,3 +363,14 @@ On RackNerd's Ubuntu 20.04, there's no `curl` by default, so `wget -O-` needs to
 |------------|--------|----------------------------|------------|
 |AlmaLinux   | 8      | _failure (`tar` missing)_  | 2023-08-29 |
 |Ubuntu      | 20.04  | **success**                | 2023-08-29 |
+
+### Self-hosted
+Self-hosted infrastructure
+
+#### Tested on
+|Distribution|       Name      | Status    | test date|
+|------------|-----------------|-----------|----------|
+|Proxmox     | 8.3.1           |**success**|2025-04-16|
+
+#### Potential tweaks:
+Will have to clean up the disk manually afterwards. You may want to remove VM disks and do some cleanup in the Proxmox GUI _before_ initiating the infect if you aren't comfortable cleaning up after.
