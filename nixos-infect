@@ -4,11 +4,71 @@
 
 set -e -o pipefail
 
+cleanupTmpSwap() {
+  # Wenn wir ein eigenes temporäres Swapfile angelegt haben, gezielt aufräumen
+  if [ -n "$swapFile" ]; then
+    echo "INFO: Cleaning up temporary swap file $swapFile" >&2
+    # Versuch, nur dieses Swapfile zu deaktivieren – Fehler ignorieren
+    swapoff "$swapFile" 2>/dev/null || true
+    rm -f "$swapFile" 2>/dev/null || true
+  fi
+
+  # Fallback: eventuelle Reste mit dem bekannten Pattern wegputzen
+  rm -f /tmp/nixos-infect.*.swp /root/nixos-infect.*.swp 2>/dev/null || true
+}
+
+# Cleanup bei normalem Ende, Fehlern und Ctrl+C (SIGINT)
+trap cleanupTmpSwap EXIT INT TERM
+
+
 autodetectProvider() {
+  # Hetzner bleibt wie gehabt
   if [ -e /etc/hetzner-build ]; then
     PROVIDER="hetznercloud"
+    return
+  fi
+
+  # Hostname holen (FQDN, falls verfügbar)
+  local hn
+  hn=$(hostname -f 2>/dev/null || hostname)
+
+  # Wenn "vmd" Teil des Hostnamens ist -> Contabo
+  # Beispiele: vmd12345.contaboserver.net, vmd12345, irgendwas-mit-vmd-xyz
+  if echo "$hn" | grep -qi 'vmd'; then
+    PROVIDER="contabo"
+    return
   fi
 }
+
+
+# Prüft, ob ein einzelnes Hostlabel RFC-1123-konform ist
+is_rfc_hostname() {
+  local h="$1"
+  [[ "$h" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$ ]]
+}
+
+# Nimmt einen "schmutzigen" Hostnamen und macht etwas RFC-Verträgliches draus
+make_valid_hostname() {
+  local h="$1"
+
+  # alles klein schreiben
+  h=$(echo "$h" | tr '[:upper:]' '[:lower:]')
+
+  # alle Zeichen außer a-z, 0-9 und - durch - ersetzen
+  h=$(echo "$h" | sed 's/[^a-z0-9-]/-/g')
+
+  # führende und abschließende - entfernen
+  h=$(echo "$h" | sed 's/^-*//; s/-*$//')
+
+  # auf 63 Zeichen kürzen (maximale Länge eines Labels)
+  h=${h:0:63}
+
+  # falls danach nichts übrig bleibt, auf sicheren Default gehen
+  [ -z "$h" ] && h="nixos"
+
+  echo "$h"
+}
+
 
 makeConf() {
   # Skip everything if main config already present
@@ -22,17 +82,45 @@ makeConf() {
 
   # NB <<"EOF" quotes / $ ` in heredocs, <<EOF does not
   mkdir -p /etc/nixos
-  # Prevent grep for sending error code 1 (and halting execution) when no lines are selected : https://www.unix.com/man-page/posix/1P/grep
+
+  # SSH-Keys für root sammeln
+  # Prevent grep for sending error code 1 (and halting execution) when no lines are selected
+  # https://www.unix.com/man-page/posix/1P/grep
   local IFS=$'\n'
-  for trypath in /root/.ssh/authorized_keys /home/$SUDO_USER/.ssh/authorized_keys $HOME/.ssh/authorized_keys; do
+  local keys=""
+  for trypath in /root/.ssh/authorized_keys /home/$SUDO_USER/.ssh/authorized_keys "$HOME"/.ssh/authorized_keys; do
       [[ -r "$trypath" ]] \
       && keys=$(sed -E 's/^[^#].*[[:space:]]((sk-ssh|sk-ecdsa|ssh|ecdsa)-[^[:space:]]+)[[:space:]]+([^[:space:]]+)([[:space:]]*.*)$/\1 \3\4/' "$trypath") \
-      && [[ ! -z "$keys" ]] \
+      && [[ -n "$keys" ]] \
       && break
   done
-  local network_import=""
 
+  # Sicherstellen, dass mindestens ein SSH-Key gefunden wurde
+  if [[ -z "${keys//[[:space:]]/}" ]]; then
+    echo "ERROR: No SSH public keys found to import for NixOS." >&2
+    echo "Searched in:" >&2
+    echo "  - /root/.ssh/authorized_keys" >&2
+    echo "  - /home/$SUDO_USER/.ssh/authorized_keys" >&2
+    echo "  - $HOME/.ssh/authorized_keys" >&2
+    echo "Aborting to avoid locking yourself out of SSH on the new NixOS system." >&2
+    exit 1
+  fi
+
+  local network_import=""
   [[ -n "$doNetConf" ]] && network_import="./networking.nix # generated at runtime by nixos-infect"
+
+  # Hostname ermitteln und RFC-konform machen
+  local raw_hostname hostname_safe
+  raw_hostname=$(hostname -s 2>/dev/null || echo "")
+
+  if is_rfc_hostname "$raw_hostname"; then
+    hostname_safe="$raw_hostname"
+  else
+    hostname_safe=$(make_valid_hostname "$raw_hostname")
+    echo "WARNING: Non-RFC-compliant hostname '$raw_hostname' normalized to '$hostname_safe'" >&2
+  fi
+
+  # Hauptkonfiguration schreiben
   cat > /etc/nixos/configuration.nix << EOF
 { ... }: {
   imports = [
@@ -43,18 +131,20 @@ makeConf() {
 
   boot.tmp.cleanOnBoot = true;
   zramSwap.enable = ${zramswap};
-  networking.hostName = "$(hostname -s)";
-  networking.domain = "$(hostname -d)";
+  networking.hostName = "$hostname_safe";
+  networking.domain = "$(hostname -d 2>/dev/null || echo "")";
   services.openssh.enable = true;
   users.users.root.openssh.authorizedKeys.keys = [$(while read -r line; do
-    line=$(echo -n "$line" | sed 's/\r//g')
-    trimmed_line=$(echo -n "$line" | xargs)
-    echo -n "''$trimmed_line'' "
+    line=\$(echo -n "\$line" | sed 's/\r//g')
+    trimmed_line=\$(echo -n "\$line" | xargs)
+    echo -n "''\$trimmed_line'' "
   done <<< "$keys")];
   system.stateVersion = "23.11";
 }
 EOF
 
+  # Bootloader-/FS-Konfiguration vorbereiten
+  local bootcfg
   if isEFI; then
     bootcfg=$(cat << EOF
   boot.loader.grub = {
@@ -72,12 +162,14 @@ EOF
 )
   fi
 
-  availableKernelModules=('"ata_piix"' '"uhci_hcd"' '"xen_blkfront"')
+  # Kernel-Module
+  local availableKernelModules=('"ata_piix"' '"uhci_hcd"' '"xen_blkfront"')
   if isX86_64; then
     availableKernelModules+=('"vmw_pvscsi"')
   fi
 
-  # If you rerun this later, be sure to prune the filesSystems attr
+  # hardware-configuration.nix schreiben
+  # Wenn du das Skript später erneut laufen lässt, solltest du fileSystems ggf. manuell prüfen
   cat > /etc/nixos/hardware-configuration.nix << EOF
 { modulesPath, ... }:
 {
@@ -90,18 +182,8 @@ $bootcfg
 }
 EOF
 
+  # Optionale Netzwerkkonfiguration generieren
   [[ -n "$doNetConf" ]] && makeNetworkingConf || true
-}
-
-makeLightsailConf() {
-  mkdir -p /etc/nixos
-  cat > /etc/nixos/configuration.nix << EOF
-{ config, pkgs, modulesPath, lib, ... }:
-{
-  imports = [ "\${modulesPath}/virtualisation/amazon-image.nix" ];
-  boot.loader.grub.device = lib.mkForce "/dev/nvme0n1";
-}
-EOF
 }
 
 makeNetworkingConf() {
@@ -195,8 +277,29 @@ checkExistingSwap() {
   fi
 }
 
+get_swapdir() {
+  # Versuche, den Dateisystemtyp von /tmp aus /proc/mounts zu lesen
+  # Format der Zeilen: <device> <mountpoint> <fstype> ...
+  local fstype
+  fstype=$(awk '$2 == "/tmp" {print $3; exit}' /proc/mounts 2>/dev/null || true)
+
+  # Wenn /tmp tmpfs ist ODER wir nichts gefunden haben, auf /root ausweichen
+  if [ "$fstype" = "tmpfs" ] || [ -z "$fstype" ]; then
+    echo "/root"
+  else
+    echo "/tmp"
+  fi
+}
+
 makeSwap() {
-  swapFile=$(mktemp /tmp/nixos-infect.XXXXX.swp)
+  local swapdir
+  swapdir=$(get_swapdir)
+
+  mkdir -p "$swapdir"
+
+  # swapFile absichtlich NICHT local, damit removeSwap() es sehen kann
+  swapFile=$(mktemp "$swapdir/nixos-infect.XXXXXX.swp")
+
   dd if=/dev/zero "of=$swapFile" bs=1M count=$((1*1024))
   chmod 0600 "$swapFile"
   mkswap "$swapFile"
@@ -204,8 +307,17 @@ makeSwap() {
 }
 
 removeSwap() {
+  # Erst alles Swapping deaktivieren – entspricht originalem Verhalten
   swapoff -a
-  rm -vf /tmp/nixos-infect.*.swp
+
+  # Falls wir ein temporäres Swapfile angelegt haben, löschen wir GENAU dieses
+  if [ -n "$swapFile" ]; then
+    rm -vf "$swapFile" 2>/dev/null || true
+  else
+    # Fallback: falls aus irgendeinem Grund swapFile nicht gesetzt ist,
+    # versuche, bekannte Pfade aufzuräumen (alte Logik).
+    rm -vf /tmp/nixos-infect.*.swp /root/nixos-infect.*.swp 2>/dev/null || true
+  fi
 }
 
 isX86_64() {
@@ -288,17 +400,36 @@ req() {
 checkEnv() {
   [[ "$(whoami)" == "root" ]] || { echo "ERROR: Must run as root"; return 1; }
 
-  # Perform some easy fixups before checking
-  # TODO prevent multiple calls to apt-get update
   (which dnf && dnf install -y perl-Digest-SHA) || true # Fedora 24
-  which bzcat || (which yum && yum install -y bzip2) \
-              || (which apt-get && apt-get update && apt-get install -y bzip2) \
-              || true
-  which xzcat || (which yum && yum install -y xz-utils) \
-              || (which apt-get && apt-get update && apt-get install -y xz-utils) \
-              || true
+
+  # --- bzip2 / bzcat sicherstellen ---
+  which bzcat || \
+    (which dnf    >/dev/null 2>&1 && dnf install -y bzip2)              || \
+    (which yum    >/dev/null 2>&1 && yum install -y bzip2)              || \
+    (which apt-get>/dev/null 2>&1 && apt-get update && apt-get install -y bzip2) || \
+    (which apt    >/dev/null 2>&1 && apt update && apt install -y bzip2)        || \
+    (which zypper >/dev/null 2>&1 && zypper --non-interactive install bzip2)    || \
+    (which apk    >/dev/null 2>&1 && apk add --no-cache bzip2)          || \
+    true
+
+  # --- xz / xzcat sicherstellen (gleiches Muster) ---
+  which xzcat || \
+    (which dnf    >/dev/null 2>&1 && dnf install -y xz xz-libs || dnf install -y xz-utils) || \
+    (which yum    >/dev/null 2>&1 && yum install -y xz xz-utils)       || \
+    (which apt-get>/dev/null 2>&1 && apt-get update && apt-get install -y xz-utils) || \
+    (which apt    >/dev/null 2>&1 && apt update && apt install -y xz-utils)        || \
+    (which zypper >/dev/null 2>&1 && zypper --non-interactive install xz)          || \
+    (which apk    >/dev/null 2>&1 && apk add --no-cache xz)            || \
+    true
+
+  # --- curl sicherstellen (falls nicht da) ---
   which curl  || fakeCurlUsingWget \
-              || (which apt-get && apt-get update && apt-get install -y curl) \
+              || (which dnf    >/dev/null 2>&1 && dnf install -y curl) \
+              || (which yum    >/dev/null 2>&1 && yum install -y curl) \
+              || (which apt-get>/dev/null 2>&1 && apt-get update && apt-get install -y curl) \
+              || (which apt    >/dev/null 2>&1 && apt update && apt install -y curl) \
+              || (which zypper >/dev/null 2>&1 && zypper --non-interactive install curl) \
+              || (which apk    >/dev/null 2>&1 && apk add --no-cache curl) \
               || true
 
   req curl || req wget || { echo "ERROR: Missing both curl and wget";  return 1; }
@@ -382,15 +513,28 @@ infect() {
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
 
-if [ ! -v PROVIDER ]; then
+# Provider ermitteln (manuell vs. autodetect)
+if [ -v PROVIDER ]; then
+  echo "INFO: Using provider from environment: '$PROVIDER'" >&2
+else
   autodetectProvider
+  if [ -n "$PROVIDER" ]; then
+    echo "INFO: Autodetected provider: '$PROVIDER'" >&2
+  else
+    echo "INFO: No specific provider detected, using generic mode" >&2
+  fi
 fi
 
 [ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
 [ "$PROVIDER" = "lightsail" ] && newrootfslabel="nixos"
-if [[ "$PROVIDER" = "digitalocean" ]] || [[ "$PROVIDER" = "servarica" ]] || [[ "$PROVIDER" = "hetznercloud" ]]; then
+
+if [[ "$PROVIDER" = "digitalocean" ]] \
+   || [[ "$PROVIDER" = "servarica" ]] \
+   || [[ "$PROVIDER" = "hetznercloud" ]] \
+   || [[ "$PROVIDER" = "contabo" ]]; then
 	doNetConf=y # some providers require detailed network config to be generated
 fi
+
 
 checkEnv
 prepareEnv
