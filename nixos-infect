@@ -105,6 +105,18 @@ $bootcfg
 EOF
 
 
+  [[ -n "$doNetConf" ]] && makeNetworkingConf || true
+}
+
+makeLightsailConf() {
+  mkdir -p /etc/nixos
+  cat > /etc/nixos/configuration.nix << EOF
+{ config, pkgs, modulesPath, lib, ... }:
+{
+  imports = [ "\${modulesPath}/virtualisation/amazon-image.nix" ];
+  boot.loader.grub.device = lib.mkForce "/dev/nvme0n1";
+}
+EOF
     [[ -n "$doNetConf" ]] && makeNetworkingConf || true
 }
 
