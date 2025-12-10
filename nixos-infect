@@ -32,6 +32,18 @@ makeConf() {
   done
   local network_import=""
 
+  if [ "$PROVIDER" = "hostinger" ]; then
+    kernel_params=$(cat << EOF
+      boot.kernelParams = [
+        "console=tty1"
+        "console=ttyS0,115200"
+      ];
+EOF
+    )
+  else
+    kernel_params=""
+    fi
+
   [[ -n "$doNetConf" ]] && network_import="./networking.nix # generated at runtime by nixos-infect"
   cat > /etc/nixos/configuration.nix << EOF
 { ... }: {
@@ -51,7 +63,8 @@ makeConf() {
     trimmed_line=$(echo -n "$line" | xargs)
     echo -n "''$trimmed_line'' "
   done <<< "$keys")];
-  system.stateVersion = "23.11";
+  system.stateVersion = "25.11";
+  $kernel_params
 }
 EOF
 
@@ -72,6 +85,7 @@ EOF
 )
   fi
 
+
   availableKernelModules=('"ata_piix"' '"uhci_hcd"' '"xen_blkfront"')
   if isX86_64; then
     availableKernelModules+=('"vmw_pvscsi"')
@@ -90,18 +104,8 @@ $bootcfg
 }
 EOF
 
-  [[ -n "$doNetConf" ]] && makeNetworkingConf || true
-}
 
-makeLightsailConf() {
-  mkdir -p /etc/nixos
-  cat > /etc/nixos/configuration.nix << EOF
-{ config, pkgs, modulesPath, lib, ... }:
-{
-  imports = [ "\${modulesPath}/virtualisation/amazon-image.nix" ];
-  boot.loader.grub.device = lib.mkForce "/dev/nvme0n1";
-}
-EOF
+    [[ -n "$doNetConf" ]] && makeNetworkingConf || true
 }
 
 makeNetworkingConf() {
@@ -331,7 +335,7 @@ infect() {
   # shellcheck disable=SC1090
   source ~/.nix-profile/etc/profile.d/nix.sh
 
-  [[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-23.05"
+  [[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-25.11"
   nix-channel --remove nixpkgs
   nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
   nix-channel --update
@@ -386,9 +390,8 @@ if [ ! -v PROVIDER ]; then
   autodetectProvider
 fi
 
-[ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
 [ "$PROVIDER" = "lightsail" ] && newrootfslabel="nixos"
-if [[ "$PROVIDER" = "digitalocean" ]] || [[ "$PROVIDER" = "servarica" ]] || [[ "$PROVIDER" = "hetznercloud" ]]; then
+if [[ "$PROVIDER" = "digitalocean" ]] || [[ "$PROVIDER" = "servarica" ]] || [[ "$PROVIDER" = "hetznercloud" ]] || [[ "$PROVIDER" = "hostinger" ]]; then
 	doNetConf=y # some providers require detailed network config to be generated
 fi
 
