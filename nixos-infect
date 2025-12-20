@@ -294,7 +294,7 @@ checkEnv() {
   which bzcat || (which yum && yum install -y bzip2) \
               || (which apt-get && apt-get update && apt-get install -y bzip2) \
               || true
-  which xzcat || (which yum && yum install -y xz-utils) \
+  which xzcat || (which yum && yum install -y xz) \
               || (which apt-get && apt-get update && apt-get install -y xz-utils) \
               || true
   which curl  || fakeCurlUsingWget \
