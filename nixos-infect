@@ -300,9 +300,9 @@ checkEnv() {
   which curl  || fakeCurlUsingWget \
               || (which apt-get && apt-get update && apt-get install -y curl) \
               || true
-  # which tar   || (which yum && yum install -y tar) \
-  #             || (which apt-get && apt-get update && apt-get install -y tar) \
-  #             || true
+  which tar || (which yum && yum install -y tar) \
+            || (which apt-get && apt-get update && apt-get install -y tar) \
+            || true
 
   req curl || req wget || { echo "ERROR: Missing both curl and wget";  return 1; }
   req bzcat            || { echo "ERROR: Missing bzcat";               return 1; }
@@ -312,7 +312,7 @@ checkEnv() {
   req ip               || { echo "ERROR: Missing ip";                  return 1; }
   req awk              || { echo "ERROR: Missing awk";                 return 1; }
   req cut || req df    || { echo "ERROR: Missing coreutils (cut, df)"; return 1; }
-  # req tar              || { echo "ERROR: Missing tar";                 return 1; }
+  req tar              || { echo "ERROR: Missing tar";                 return 1; }
 
   # On some versions of Oracle Linux these have the wrong permissions,
   # which stops sshd from starting when NixOS boots
