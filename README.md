@@ -370,6 +370,17 @@ On RackNerd's Ubuntu 20.04, there's no `curl` by default, so `wget -O-` needs to
 |AlmaLinux   | 8      | _failure (`tar` missing)_  | 2023-08-29 |
 |Ubuntu      | 20.04  | **success**                | 2023-08-29 |
 
+### Webdock
+Remember that you can not add SSH keys to the root user trough the web interface,
+manually add a public key to `/root/.ssh/authorized_keys`.
+
+Make sure to set `PROVIDER=webdock`
+
+#### Tested on
+|Distribution| Name   | Status    | test date|
+|------------|--------|-----------|----------|
+|Ubuntu      | 20.04  | success   |2024-10-26|
+|Ubuntu      | 22.04  | success   |2024-10-26|
 ### Ionos
 Just set an SSH-Key and run the Script.
 
