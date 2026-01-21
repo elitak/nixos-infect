@@ -26,6 +26,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Scaleway](https://scaleway.com)
 * [RackNerd](https://my.racknerd.com/index.php?rp=/store/black-friday-2022)
 * [Ionos](https://www.ionos.de/server/vps)
+* [Aeza](https://aeza.net/)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
@@ -121,8 +122,10 @@ runcmd:
 |Ubuntu      |19.10 x64        |**success**|2020-03-30|
 |Ubuntu      |20.04 x64        |**success**|2022-03-23|
 |Ubuntu      |22.04 x64        |**success**|2023-06-05|
+|Ubuntu      |22.04 (LTS) x64  |**success**|2024-03-18|
 |Ubuntu      |22.10 x64        | _failure_ |2023-06-05|
 |Ubuntu      |23.10 x64        | _failure_ |2023-11-16|
+|Ubuntu      |23.10 x64        | _failure_ |2024-03-18|
 
 ### Vultr
 To set up a NixOS Vultr server, instantiate an Ubuntu box with the following "Cloud-Init User-Data":
@@ -372,3 +375,15 @@ Just set an SSH-Key and run the Script.
 |Distribution|       Name      | Status        | test date|
 |------------|-----------------|---------------|----------|
 |Ubuntu      | 22.04           | **success**   |2024-05-15|
+
+### Aeza
+Aeza works with `doNetConf=y` parameter:
+
+```command
+# curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-23.05 doNetConf=y bash -x
+```
+
+#### Tested on
+|Distribution| Name   | Status                     |   test date|
+|------------|--------|----------------------------|------------|
+|Debian      | 12     | **success**                | 2024-03-18 |
