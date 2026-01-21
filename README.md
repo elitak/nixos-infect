@@ -67,6 +67,8 @@ Any errors halt execution.
 A failure will leave the system in an inconsistent state,
 and so it is advised to run with `bash -x`.
 
+If you're running this script and networking does not come up after reboot, try setting `doNetConf=y` environment variable when executing the script. This generates the network configuration automatically.
+
 ## Hoster notes:
 ### Digital Ocean
 You may utilize Digital Ocean's "user data" mechanism (found in the Web UI or HTTP API),
