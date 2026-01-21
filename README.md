@@ -25,6 +25,8 @@ This script has successfully been tested on at least the follow hosting provider
 * [Clouding.io](https://clouding.io)
 * [Scaleway](https://scaleway.com)
 * [RackNerd](https://my.racknerd.com/index.php?rp=/store/black-friday-2022)
+* [Ionos](https://www.ionos.de/server/vps)
+* [Aeza](https://aeza.net/)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
@@ -120,8 +122,10 @@ runcmd:
 |Ubuntu      |19.10 x64        |**success**|2020-03-30|
 |Ubuntu      |20.04 x64        |**success**|2022-03-23|
 |Ubuntu      |22.04 x64        |**success**|2023-06-05|
+|Ubuntu      |22.04 (LTS) x64  |**success**|2024-03-18|
 |Ubuntu      |22.10 x64        | _failure_ |2023-06-05|
-|Ubuntu      |23.10 x64        | _failure_ |2023-11-16|
+|Ubuntu      |23.10 x64        | _failure_ |2024-03-18|
+|Ubuntu      |24.04 x64        |**success**|2024-07-03|
 
 ### Vultr
 To set up a NixOS Vultr server, instantiate an Ubuntu box with the following "Cloud-Init User-Data":
@@ -220,6 +224,7 @@ Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) i
 |Ubuntu      | 22.04           |**success**|2022-11-13| free arm |
 |Oracle Linux| 9.1[2]          |**success**|2023-03-29| free arm |
 |Oracle Linux| 8.7[3]          |**success**|2023-06-06| free amd |
+|Oracle Linux| 8.10            |**success**|2024-06-03| free arm |
 |AlmaLinux OS| 9.2.20230516    |**success**|2023-07-05| free arm |
 
     [1] The Oracle 7.9 layout has 200Mb for /boot 8G for swap
@@ -363,4 +368,23 @@ On RackNerd's Ubuntu 20.04, there's no `curl` by default, so `wget -O-` needs to
 |------------|--------|----------------------------|------------|
 |AlmaLinux   | 8      | _failure (`tar` missing)_  | 2023-08-29 |
 |Ubuntu      | 20.04  | **success**                | 2023-08-29 |
+
+### Ionos
+Just set an SSH-Key and run the Script.
+
+#### Tested on
+|Distribution|       Name      | Status        | test date|
+|------------|-----------------|---------------|----------|
+|Ubuntu      | 22.04           | **success**   |2024-05-15|
+
+### Aeza
+Aeza works with `doNetConf=y` parameter:
+
+```command
+# curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-23.05 doNetConf=y bash -x
+```
+
+#### Tested on
+|Distribution| Name   | Status                     |   test date|
+|------------|--------|----------------------------|------------|
 |Debian      | 12     | **success**                | 2024-08-25 |
