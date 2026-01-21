@@ -41,6 +41,9 @@ makeConf() {
     $NIXOS_IMPORT
   ];
 
+  # Workaround for https://github.com/NixOS/nix/issues/8502
+  services.logrotate.checkConfig = false;
+
   boot.tmp.cleanOnBoot = true;
   zramSwap.enable = ${zramswap};
   networking.hostName = "$(hostname -s)";
