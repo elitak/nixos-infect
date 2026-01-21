@@ -374,6 +374,12 @@ On RackNerd's Ubuntu 20.04, there's no `curl` by default, so `wget -O-` needs to
 |AlmaLinux   | 8      | _failure (`tar` missing)_  | 2023-08-29 |
 |Ubuntu      | 20.04  | **success**                | 2023-08-29 |
 
+
+### Layer7
+
+```command
+# wget -O- https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=layer7 NIX_CHANNEL=nixos-23.05 bash -x
+
 ### Self-hosted
 Self-hosted infrastructure
 
@@ -397,6 +403,7 @@ On IBM's Debian 20.04, there's no `curl` by default, so it needs to be installed
 ```command
 apt update
 apt install curl
+
 ### Webdock
 Remember that you can not add SSH keys to the root user trough the web interface,
 manually add a public key to `/root/.ssh/authorized_keys`.
@@ -426,5 +433,7 @@ Aeza works with `doNetConf=y` parameter:
 #### Tested on
 |Distribution| Name   | Status                     |   test date|
 |------------|--------|----------------------------|------------|
+|Ubuntu      | 20.04  | **success**                | 2025-05-27 |
+|Ubuntu      | 22.04  | **success**                | 2025-05-27 |
 |Debian      | 12     | **success**                | 2024-08-25 |
 |Debian      | 12.6   | **success**                | 2024-11-12 |
