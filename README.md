@@ -25,6 +25,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Clouding.io](https://clouding.io)
 * [Scaleway](https://scaleway.com)
 * [RackNerd](https://my.racknerd.com/index.php?rp=/store/black-friday-2022)
+* [Ionos](https://www.ionos.de/server/vps)
 * [Aeza](https://aeza.net/)
 
 Should you find that it works on your hoster,
@@ -366,6 +367,14 @@ On RackNerd's Ubuntu 20.04, there's no `curl` by default, so `wget -O-` needs to
 |------------|--------|----------------------------|------------|
 |AlmaLinux   | 8      | _failure (`tar` missing)_  | 2023-08-29 |
 |Ubuntu      | 20.04  | **success**                | 2023-08-29 |
+
+### Ionos
+Just set an SSH-Key and run the Script.
+
+#### Tested on
+|Distribution|       Name      | Status        | test date|
+|------------|-----------------|---------------|----------|
+|Ubuntu      | 22.04           | **success**   |2024-05-15|
 
 ### Aeza
 Aeza works with `doNetConf=y` parameter:
