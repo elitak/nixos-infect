@@ -32,6 +32,18 @@ makeConf() {
   done
   local network_import=""
 
+  if [ "$PROVIDER" = "hostinger" ]; then
+    kernel_params=$(cat << EOF
+      boot.kernelParams = [
+        "console=tty1"
+        "console=ttyS0,115200"
+      ];
+EOF
+    )
+  else
+    kernel_params=""
+    fi
+
   [[ -n "$doNetConf" ]] && network_import="./networking.nix # generated at runtime by nixos-infect"
   cat > /etc/nixos/configuration.nix << EOF
 { ... }: {
@@ -40,6 +52,9 @@ makeConf() {
     $network_import
     $NIXOS_IMPORT
   ];
+
+  # Workaround for https://github.com/NixOS/nix/issues/8502
+  services.logrotate.checkConfig = false;
 
   boot.tmp.cleanOnBoot = true;
   zramSwap.enable = ${zramswap};
@@ -52,25 +67,42 @@ makeConf() {
     echo -n "''$trimmed_line'' "
   done <<< "$keys")];
   system.stateVersion = "23.11";
+  $kernel_params
 }
 EOF
 
   if isEFI; then
-    bootcfg=$(cat << EOF
+    if [[ $bootFs == /boot ]]; then
+      bootcfg=$(cat << EOF
   boot.loader.grub = {
     efiSupport = true;
     efiInstallAsRemovable = true;
     device = "nodev";
   };
-  fileSystems."/boot" = { device = "$esp"; fsType = "vfat"; };
+  fileSystems."$bootFs" = { device = "$esp"; fsType = "vfat"; };
 EOF
 )
+    else
+      bootcfg=$(cat << EOF
+  boot.loader = {
+    efi.efiSysMountPoint = "/boot/efi";
+    grub = {
+      efiSupport = true;
+      efiInstallAsRemovable = true;
+      device = "nodev";
+    };
+  };
+  fileSystems."$bootFs" = { device = "$esp"; fsType = "vfat"; };
+EOF
+)
+    fi
   else
     bootcfg=$(cat << EOF
   boot.loader.grub.device = "$grubdev";
 EOF
 )
   fi
+
 
   availableKernelModules=('"ata_piix"' '"uhci_hcd"' '"xen_blkfront"')
   if isX86_64; then
@@ -90,6 +122,7 @@ $bootcfg
 }
 EOF
 
+
   [[ -n "$doNetConf" ]] && makeNetworkingConf || true
 }
 
@@ -102,6 +135,7 @@ makeLightsailConf() {
   boot.loader.grub.device = lib.mkForce "/dev/nvme0n1";
 }
 EOF
+    [[ -n "$doNetConf" ]] && makeNetworkingConf || true
 }
 
 makeNetworkingConf() {
@@ -224,7 +258,7 @@ findESP() {
       && esp="$(df "$d" --output=source | sed 1d)" \
       && break
   done
-  [[ -z "$esp" ]] && { echo "ERROR: No ESP mount point found"; return 1; }
+  [[ -z "$esp" ]] && { echo "WARNING: No ESP mount point found"; return 1; }
   for uuid in /dev/disk/by-uuid/*; do
     [[ $(readlink -f "$uuid") == "$esp" ]] && echo $uuid && return 0
   done
@@ -234,6 +268,13 @@ prepareEnv() {
   # $esp and $grubdev are used in makeConf()
   if isEFI; then
     esp="$(findESP)"
+    if mount | grep -q /boot/efi; then
+      bootFs=/boot/efi
+    elif mount | grep -q /boot/EFI; then
+      bootFs=/boot/EFI
+    else
+      bootFs=/boot
+    fi
   else
     for grubdev in /dev/vda /dev/sda /dev/xvda /dev/nvme0n1 ; do [[ -e $grubdev ]] && break; done
   fi
@@ -294,12 +335,15 @@ checkEnv() {
   which bzcat || (which yum && yum install -y bzip2) \
               || (which apt-get && apt-get update && apt-get install -y bzip2) \
               || true
-  which xzcat || (which yum && yum install -y xz-utils) \
+  which xzcat || (which yum && yum install -y xz) \
               || (which apt-get && apt-get update && apt-get install -y xz-utils) \
               || true
   which curl  || fakeCurlUsingWget \
               || (which apt-get && apt-get update && apt-get install -y curl) \
               || true
+  which tar || (which yum && yum install -y tar) \
+            || (which apt-get && apt-get update && apt-get install -y tar) \
+            || true
 
   req curl || req wget || { echo "ERROR: Missing both curl and wget";  return 1; }
   req bzcat            || { echo "ERROR: Missing bzcat";               return 1; }
@@ -309,6 +353,7 @@ checkEnv() {
   req ip               || { echo "ERROR: Missing ip";                  return 1; }
   req awk              || { echo "ERROR: Missing awk";                 return 1; }
   req cut || req df    || { echo "ERROR: Missing coreutils (cut, df)"; return 1; }
+  req tar              || { echo "ERROR: Missing tar";                 return 1; }
 
   # On some versions of Oracle Linux these have the wrong permissions,
   # which stops sshd from starting when NixOS boots
@@ -331,14 +376,14 @@ infect() {
   # shellcheck disable=SC1090
   source ~/.nix-profile/etc/profile.d/nix.sh
 
-  [[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-23.05"
+  [[ -z "$NIX_CHANNEL" ]] && NIX_CHANNEL="nixos-25.11"
   nix-channel --remove nixpkgs
   nix-channel --add "https://nixos.org/channels/$NIX_CHANNEL" nixos
   nix-channel --update
 
   if [[ $NIXOS_CONFIG = http* ]]
   then
-    curl $NIXOS_CONFIG -o /etc/nixos/configuration.nix
+    curl -L $NIXOS_CONFIG -o /etc/nixos/configuration.nix
     unset NIXOS_CONFIG
   fi
 
@@ -370,25 +415,24 @@ infect() {
   echo root/.nix-defexpr/channels >> /etc/NIXOS_LUSTRATE
   (cd / && ls etc/ssh/ssh_host_*_key* || true) >> /etc/NIXOS_LUSTRATE
 
-  rm -rf /boot.bak
+  rm -rf $bootFs.bak
   isEFI && umount "$esp"
 
-  mv -v /boot /boot.bak || { cp -a /boot /boot.bak ; rm -rf /boot/* ; umount /boot ; }
+  mv -v $bootFs $bootFs.bak || { cp -a $bootFs $bootFs.bak ; rm -rf $bootFs/* ; umount $bootFs ; }
   if isEFI; then
-    mkdir -p /boot
-    mount "$esp" /boot
-    find /boot -depth ! -path /boot -exec rm -rf {} +
+    mkdir -p $bootFs
+    mount "$esp" $bootFs
+    find $bootFs -depth ! -path $bootFs -exec rm -rf {} +
   fi
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
 
-if [ ! -v PROVIDER ]; then
+if [ ! -v $PROVIDER ]; then
   autodetectProvider
 fi
 
-[ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
 [ "$PROVIDER" = "lightsail" ] && newrootfslabel="nixos"
-if [[ "$PROVIDER" = "digitalocean" ]] || [[ "$PROVIDER" = "servarica" ]] || [[ "$PROVIDER" = "hetznercloud" ]]; then
+if [[ "$PROVIDER" = "digitalocean" ]] || [[ "$PROVIDER" = "servarica" ]] || [[ "$PROVIDER" = "hetznercloud" ]] || [[ "$PROVIDER" = "webdock" ]] || [[ "$PROVIDER" = "layer7" ]] || [[ "$PROVIDER" = "hostinger" ]]; then
 	doNetConf=y # some providers require detailed network config to be generated
 fi
 
@@ -399,7 +443,9 @@ if [[ -z "$NO_SWAP" ]]; then
     makeSwap # smallest (512MB) droplet needs extra memory!
 fi
 makeConf
-infect
+if [[ -z "$NO_INFECT" ]]; then
+    infect
+fi
 if [[ -z "$NO_SWAP" ]]; then
     removeSwap
 fi
