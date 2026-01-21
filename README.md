@@ -370,6 +370,18 @@ On RackNerd's Ubuntu 20.04, there's no `curl` by default, so `wget -O-` needs to
 |AlmaLinux   | 8      | _failure (`tar` missing)_  | 2023-08-29 |
 |Ubuntu      | 20.04  | **success**                | 2023-08-29 |
 
+### IBM Cloud VPC
+Remember that the SSH keys are not automatically generated/uploaded,
+so you need to create them as usual with `ssh-keygen` or some other means,
+add the public key to the `.ssh/authorized_keys` file on the remote host,
+and have a copy of the private key on your local box.
+
+The SSH Key can be added as 
+
+On IBM's Debian 20.04, there's no `curl` by default, so it needs to be installed first:
+```command
+apt update
+apt install curl
 ### Webdock
 Remember that you can not add SSH keys to the root user trough the web interface,
 manually add a public key to `/root/.ssh/authorized_keys`.
@@ -400,3 +412,4 @@ Aeza works with `doNetConf=y` parameter:
 |Distribution| Name   | Status                     |   test date|
 |------------|--------|----------------------------|------------|
 |Debian      | 12     | **success**                | 2024-08-25 |
+|Debian      | 12.6   | **success**                | 2024-11-12 |
