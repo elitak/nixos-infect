@@ -239,7 +239,7 @@ findESP() {
       && esp="$(df "$d" --output=source | sed 1d)" \
       && break
   done
-  [[ -z "$esp" ]] && { echo "ERROR: No ESP mount point found"; return 1; }
+  [[ -z "$esp" ]] && { echo "WARNING: No ESP mount point found"; return 1; }
   for uuid in /dev/disk/by-uuid/*; do
     [[ $(readlink -f "$uuid") == "$esp" ]] && echo $uuid && return 0
   done
