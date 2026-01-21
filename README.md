@@ -27,6 +27,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [RackNerd](https://my.racknerd.com/index.php?rp=/store/black-friday-2022)
 * [Ionos](https://www.ionos.de/server/vps)
 * [Aeza](https://aeza.net/)
+* [Severs.com](https://servers.com)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
