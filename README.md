@@ -25,6 +25,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Clouding.io](https://clouding.io)
 * [Scaleway](https://scaleway.com)
 * [RackNerd](https://my.racknerd.com/index.php?rp=/store/black-friday-2022)
+* [Servinga](https://servinga.com/)
 * [Ionos](https://www.ionos.de/server/vps)
 * [Aeza](https://aeza.net/)
 * [Severs.com](https://servers.com)
@@ -375,6 +376,10 @@ On RackNerd's Ubuntu 20.04, there's no `curl` by default, so `wget -O-` needs to
 |AlmaLinux   | 8      | _failure (`tar` missing)_  | 2023-08-29 |
 |Ubuntu      | 20.04  | **success**                | 2023-08-29 |
 
+### Servinga
+Servinga offers nixos images already, but only for systems with 4G of ram or higher.
+
+I got nixos running on a 1G machine by starting a debian 11 instance and then using nixos-infect. 
 
 ### Layer7
 
@@ -434,6 +439,7 @@ Aeza works with `doNetConf=y` parameter:
 #### Tested on
 |Distribution| Name   | Status                     |   test date|
 |------------|--------|----------------------------|------------|
+|Debian      | 11     | **success**                | 2025-10-07 |
 |Ubuntu      | 20.04  | **success**                | 2025-05-27 |
 |Ubuntu      | 22.04  | **success**                | 2025-05-27 |
 |Debian      | 12     | **success**                | 2024-08-25 |
