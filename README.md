@@ -387,4 +387,4 @@ Aeza works with `doNetConf=y` parameter:
 #### Tested on
 |Distribution| Name   | Status                     |   test date|
 |------------|--------|----------------------------|------------|
-|Debian      | 12     | **success**                | 2024-03-18 |
+|Debian      | 12     | **success**                | 2024-08-25 |
