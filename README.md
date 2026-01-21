@@ -25,6 +25,9 @@ This script has successfully been tested on at least the follow hosting provider
 * [Clouding.io](https://clouding.io)
 * [Scaleway](https://scaleway.com)
 * [RackNerd](https://my.racknerd.com/index.php?rp=/store/black-friday-2022)
+* [Ionos](https://www.ionos.de/server/vps)
+* [Aeza](https://aeza.net/)
+* [Severs.com](https://servers.com)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
@@ -52,16 +55,19 @@ and most importantly, simply didn't work for me!
 > *NB:* This step is important.
 > The root user will not have a password when nixos-infect runs to completion.
 > To enable root login, you *must* have an SSH key configured.
+> If a custom SSH port is used, it will be reverted back to 22.
 
 4) run the script with:
 ```
-  curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-23.05 bash -x
+  curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-24.05 bash -x
 ```
 
 *NB*: This script wipes out the targeted host's root filesystem when it runs to completion.
 Any errors halt execution.
 A failure will leave the system in an inconsistent state,
 and so it is advised to run with `bash -x`.
+
+If you're running this script and networking does not come up after reboot, try setting `doNetConf=y` environment variable when executing the script. This generates the network configuration automatically.
 
 ## Hoster notes:
 ### Digital Ocean
@@ -72,7 +78,7 @@ and supply to it the following example yaml stanzas:
 #cloud-config
 
 runcmd:
-  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIX_CHANNEL=nixos-23.05 bash 2>&1 | tee /tmp/infect.log
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIX_CHANNEL=nixos-24.05 bash 2>&1 | tee /tmp/infect.log
 ```
 
 #### Potential tweaks:
@@ -90,7 +96,7 @@ write_files:
       environment.systemPackages = with pkgs; [ vim ];
     }
 runcmd:
-  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-23.05 bash 2>&1 | tee /tmp/infect.log
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-24.05 bash 2>&1 | tee /tmp/infect.log
 ```
 
 
@@ -120,8 +126,10 @@ runcmd:
 |Ubuntu      |19.10 x64        |**success**|2020-03-30|
 |Ubuntu      |20.04 x64        |**success**|2022-03-23|
 |Ubuntu      |22.04 x64        |**success**|2023-06-05|
+|Ubuntu      |22.04 (LTS) x64  |**success**|2024-03-18|
 |Ubuntu      |22.10 x64        | _failure_ |2023-06-05|
-|Ubuntu      |23.10 x64        | _failure_ |2023-11-16|
+|Ubuntu      |23.10 x64        | _failure_ |2024-03-18|
+|Ubuntu      |24.04 x64        |**success**|2024-07-03|
 
 ### Vultr
 To set up a NixOS Vultr server, instantiate an Ubuntu box with the following "Cloud-Init User-Data":
@@ -129,7 +137,7 @@ To set up a NixOS Vultr server, instantiate an Ubuntu box with the following "Cl
 ```bash
 #!/bin/sh
 
-curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-23.05 bash
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-24.05 bash
 ```
 
 Allow for a few minutes over the usual Ubuntu deployment time for NixOS to download & install itself.
@@ -149,7 +157,7 @@ When creating a server provide the following yaml as "Cloud config":
 #cloud-config
 
 runcmd:
-  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=hetznercloud NIX_CHANNEL=nixos-23.05 bash 2>&1 | tee /tmp/infect.log
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=hetznercloud NIX_CHANNEL=nixos-24.05 bash 2>&1 | tee /tmp/infect.log
 ```
 
 #### Tested on
@@ -220,12 +228,13 @@ Tested for both VM.Standard.E2.1.Micro (x86) and VM.Standard.A1.Flex (AArch64) i
 |Ubuntu      | 22.04           |**success**|2022-11-13| free arm |
 |Oracle Linux| 9.1[2]          |**success**|2023-03-29| free arm |
 |Oracle Linux| 8.7[3]          |**success**|2023-06-06| free amd |
+|Oracle Linux| 8.10            |**success**|2024-06-03| free arm |
 |AlmaLinux OS| 9.2.20230516    |**success**|2023-07-05| free arm |
 
     [1] The Oracle 7.9 layout has 200Mb for /boot 8G for swap
     PR#100 Adopted 8G Swap device
     [2] OL9.1 had 2GB /boot, 100MB /boot/efi (nixos used as /boot) and swapfile
-    [3] Both 22.11 and 23.05 failed to boot, but installing 22.05 and then upgrading
+    [3] Both 22.11 and 24.05 failed to boot, but installing 22.05 and then upgrading
     worked out as intended.
 
 ### Aliyun ECS
@@ -237,6 +246,7 @@ Aliyun ECS tested on ecs.s6-c1m2.large, region **cn-shanghai**, needs a few twea
 |------------|-----------------|-----------|----------|
 |Ubuntu      | 20.04           |**success**|2021-12-28|
 |Ubuntu      | 22.04           |**success**|2023-04-05|
+|Debian      | 12.4            |**success**|2024-12-24|
 
 
 ### GalaxyGate
@@ -280,7 +290,7 @@ build time or using `ssh-copy-id` before running nixos-infect
 ```
 #!/bin/sh
 
-curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-23.05 bash 2>&1 | tee /tmp/infect.log
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-24.05 bash 2>&1 | tee /tmp/infect.log
 ```
 
 #### Tested on
@@ -308,7 +318,7 @@ Tested on vServer. The network configuration seems to be important so the same t
 ### ServArica
 Requires the same static network settings that Digital Ocean does.
 
-    curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=servarica NIX_CHANNEL=nixos-23.05 bash
+    curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=servarica NIX_CHANNEL=nixos-24.05 bash
 
 #### Tested on
 |Distribution|       Name      | Status    | test date|
@@ -339,7 +349,7 @@ write_files:
       environment.systemPackages = with pkgs; [ tmux ];
     }
 runcmd:
-  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect |  NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-23.05 bash 2>&1 | tee /tmp/infect.log
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect |  NIXOS_IMPORT=./host.nix NIX_CHANNEL=nixos-24.05 bash 2>&1 | tee /tmp/infect.log
 ```
 
 #### Tested on
@@ -355,7 +365,7 @@ and have a copy of the private key on your local box.
 
 On RackNerd's Ubuntu 20.04, there's no `curl` by default, so `wget -O-` needs to be used instead:
 ```command
-# wget -O- https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-23.05 bash -x
+# wget -O- https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-24.05 bash -x
 ```
 
 #### Tested on
@@ -369,6 +379,55 @@ On RackNerd's Ubuntu 20.04, there's no `curl` by default, so `wget -O-` needs to
 
 ```command
 # wget -O- https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=layer7 NIX_CHANNEL=nixos-23.05 bash -x
+
+### Self-hosted
+Self-hosted infrastructure
+
+#### Tested on
+|Distribution|       Name      | Status    | test date|
+|------------|-----------------|-----------|----------|
+|Proxmox     | 8.3.1           |**success**|2025-04-16|
+
+#### Potential tweaks:
+Will have to clean up the disk manually afterwards. You may want to remove VM disks and do some cleanup in the Proxmox GUI _before_ initiating the infect if you aren't comfortable cleaning up after.
+
+### IBM Cloud VPC
+Remember that the SSH keys are not automatically generated/uploaded,
+so you need to create them as usual with `ssh-keygen` or some other means,
+add the public key to the `.ssh/authorized_keys` file on the remote host,
+and have a copy of the private key on your local box.
+
+The SSH Key can be added as 
+
+On IBM's Debian 20.04, there's no `curl` by default, so it needs to be installed first:
+```command
+apt update
+apt install curl
+
+### Webdock
+Remember that you can not add SSH keys to the root user trough the web interface,
+manually add a public key to `/root/.ssh/authorized_keys`.
+
+Make sure to set `PROVIDER=webdock`
+
+#### Tested on
+|Distribution| Name   | Status    | test date|
+|------------|--------|-----------|----------|
+|Ubuntu      | 20.04  | success   |2024-10-26|
+|Ubuntu      | 22.04  | success   |2024-10-26|
+### Ionos
+Just set an SSH-Key and run the Script.
+
+#### Tested on
+|Distribution|       Name      | Status        | test date|
+|------------|-----------------|---------------|----------|
+|Ubuntu      | 22.04           | **success**   |2024-05-15|
+
+### Aeza
+Aeza works with `doNetConf=y` parameter:
+
+```command
+# curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-23.05 doNetConf=y bash -x
 ```
 
 #### Tested on
@@ -376,3 +435,5 @@ On RackNerd's Ubuntu 20.04, there's no `curl` by default, so `wget -O-` needs to
 |------------|--------|----------------------------|------------|
 |Ubuntu      | 20.04  | **success**                | 2025-05-27 |
 |Ubuntu      | 22.04  | **success**                | 2025-05-27 |
+|Debian      | 12     | **success**                | 2024-08-25 |
+|Debian      | 12.6   | **success**                | 2024-11-12 |

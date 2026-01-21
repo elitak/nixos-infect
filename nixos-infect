@@ -41,6 +41,9 @@ makeConf() {
     $NIXOS_IMPORT
   ];
 
+  # Workaround for https://github.com/NixOS/nix/issues/8502
+  services.logrotate.checkConfig = false;
+
   boot.tmp.cleanOnBoot = true;
   zramSwap.enable = ${zramswap};
   networking.hostName = "$(hostname -s)";
@@ -56,15 +59,30 @@ makeConf() {
 EOF
 
   if isEFI; then
-    bootcfg=$(cat << EOF
+    if [[ $bootFs == /boot ]]; then
+      bootcfg=$(cat << EOF
   boot.loader.grub = {
     efiSupport = true;
     efiInstallAsRemovable = true;
     device = "nodev";
   };
-  fileSystems."/boot" = { device = "$esp"; fsType = "vfat"; };
+  fileSystems."$bootFs" = { device = "$esp"; fsType = "vfat"; };
 EOF
 )
+    else
+      bootcfg=$(cat << EOF
+  boot.loader = {
+    efi.efiSysMountPoint = "/boot/efi";
+    grub = {
+      efiSupport = true;
+      efiInstallAsRemovable = true;
+      device = "nodev";
+    };
+  };
+  fileSystems."$bootFs" = { device = "$esp"; fsType = "vfat"; };
+EOF
+)
+    fi
   else
     bootcfg=$(cat << EOF
   boot.loader.grub.device = "$grubdev";
@@ -224,7 +242,7 @@ findESP() {
       && esp="$(df "$d" --output=source | sed 1d)" \
       && break
   done
-  [[ -z "$esp" ]] && { echo "ERROR: No ESP mount point found"; return 1; }
+  [[ -z "$esp" ]] && { echo "WARNING: No ESP mount point found"; return 1; }
   for uuid in /dev/disk/by-uuid/*; do
     [[ $(readlink -f "$uuid") == "$esp" ]] && echo $uuid && return 0
   done
@@ -234,6 +252,13 @@ prepareEnv() {
   # $esp and $grubdev are used in makeConf()
   if isEFI; then
     esp="$(findESP)"
+    if mount | grep -q /boot/efi; then
+      bootFs=/boot/efi
+    elif mount | grep -q /boot/EFI; then
+      bootFs=/boot/EFI
+    else
+      bootFs=/boot
+    fi
   else
     for grubdev in /dev/vda /dev/sda /dev/xvda /dev/nvme0n1 ; do [[ -e $grubdev ]] && break; done
   fi
@@ -338,7 +363,7 @@ infect() {
 
   if [[ $NIXOS_CONFIG = http* ]]
   then
-    curl $NIXOS_CONFIG -o /etc/nixos/configuration.nix
+    curl -L $NIXOS_CONFIG -o /etc/nixos/configuration.nix
     unset NIXOS_CONFIG
   fi
 
@@ -370,25 +395,24 @@ infect() {
   echo root/.nix-defexpr/channels >> /etc/NIXOS_LUSTRATE
   (cd / && ls etc/ssh/ssh_host_*_key* || true) >> /etc/NIXOS_LUSTRATE
 
-  rm -rf /boot.bak
+  rm -rf $bootFs.bak
   isEFI && umount "$esp"
 
-  mv -v /boot /boot.bak || { cp -a /boot /boot.bak ; rm -rf /boot/* ; umount /boot ; }
+  mv -v $bootFs $bootFs.bak || { cp -a $bootFs $bootFs.bak ; rm -rf $bootFs/* ; umount $bootFs ; }
   if isEFI; then
-    mkdir -p /boot
-    mount "$esp" /boot
-    find /boot -depth ! -path /boot -exec rm -rf {} +
+    mkdir -p $bootFs
+    mount "$esp" $bootFs
+    find $bootFs -depth ! -path $bootFs -exec rm -rf {} +
   fi
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
 
-if [ ! -v PROVIDER ]; then
+if [ ! -v $PROVIDER ]; then
   autodetectProvider
 fi
 
-[ "$PROVIDER" = "digitalocean" ] && doNetConf=y # digitalocean requires detailed network config to be generated
 [ "$PROVIDER" = "lightsail" ] && newrootfslabel="nixos"
-if [[ "$PROVIDER" = "digitalocean" ]] || [[ "$PROVIDER" = "servarica" ]] || [[ "$PROVIDER" = "hetznercloud" ]] || [[ "$PROVIDER" = "layer7" ]]; then
+if [[ "$PROVIDER" = "digitalocean" ]] || [[ "$PROVIDER" = "servarica" ]] || [[ "$PROVIDER" = "hetznercloud" ]] || [[ "$PROVIDER" = "webdock" ]] || [[ "$PROVIDER" = "layer7" ]]; then
 	doNetConf=y # some providers require detailed network config to be generated
 fi
 
@@ -399,7 +423,9 @@ if [[ -z "$NO_SWAP" ]]; then
     makeSwap # smallest (512MB) droplet needs extra memory!
 fi
 makeConf
-infect
+if [[ -z "$NO_INFECT" ]]; then
+    infect
+fi
 if [[ -z "$NO_SWAP" ]]; then
     removeSwap
 fi
