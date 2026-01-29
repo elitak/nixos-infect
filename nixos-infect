@@ -415,15 +415,57 @@ infect() {
   echo root/.nix-defexpr/channels >> /etc/NIXOS_LUSTRATE
   (cd / && ls etc/ssh/ssh_host_*_key* || true) >> /etc/NIXOS_LUSTRATE
 
-  rm -rf $bootFs.bak
-  isEFI && umount "$esp"
-
-  mv -v $bootFs $bootFs.bak || { cp -a $bootFs $bootFs.bak ; rm -rf $bootFs/* ; umount $bootFs ; }
+  rm -rf /boot.bak
+  
+  # Fixed umount logic for nested boot mounts
   if isEFI; then
-    mkdir -p $bootFs
-    mount "$esp" $bootFs
-    find $bootFs -depth ! -path $bootFs -exec rm -rf {} +
+    echo "Unmounting boot filesystems..."
+    # Unmount nested mounts first (inside-out)
+    # First unmount /boot/efi (or /boot/EFI)
+    if mount | grep -q "$bootFs"; then
+      echo "Unmounting $bootFs..."
+      umount "$bootFs" 2>/dev/null || umount -l "$bootFs" 2>/dev/null || true
+    fi
+    
+    # Then unmount /boot itself if it's a separate mount
+    if mount | grep -q " /boot "; then
+      echo "Unmounting /boot..."
+      umount /boot 2>/dev/null || umount -l /boot 2>/dev/null || true
+    fi
+    
+    # Wait a moment for lazy unmounts to take effect
+    sleep 2
+    
+    # Verify unmounts succeeded
+    if mount | grep -q "/boot"; then
+      echo "WARNING: Some boot filesystems still mounted:"
+      mount | grep /boot
+    fi
   fi
+
+  # Backup boot directory
+  if [[ -d /boot ]]; then
+    echo "Backing up /boot..."
+    # Try to move first
+    if ! mv /boot /boot.bak 2>/dev/null; then
+      # If move fails, copy and clear the content (not the directory itself)
+      echo "Move failed, copying /boot to /boot.bak..."
+      mkdir -p /boot.bak
+      cp -a /boot/* /boot.bak/ 2>/dev/null || true
+      # Remove everything inside /boot
+      find /boot -mindepth 1 -delete 2>/dev/null || true
+    fi
+  fi
+  
+  # Recreate and remount boot
+  if isEFI; then
+    echo "Remounting $bootFs..."
+    mkdir -p "$bootFs"
+    mount "$esp" "$bootFs"
+    # Clean the ESP
+    find "$bootFs" -mindepth 1 -delete 2>/dev/null || true
+  fi
+  
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
 
