@@ -265,32 +265,31 @@ findESP() {
 }
 
 prepareEnv() {
-  # $esp and $grubdev are used in makeConf()
   if isEFI; then
     esp="$(findESP)"
-    if mount | grep -q /boot/efi; then
+    # Robustly detect mount point
+    if mountpoint -q /boot/efi; then
       bootFs=/boot/efi
-    elif mount | grep -q /boot/EFI; then
+    elif mountpoint -q /boot/EFI; then
       bootFs=/boot/EFI
-    else
+    elif mountpoint -q /boot; then
       bootFs=/boot
+    else
+      bootFs=/boot/efi
     fi
   else
+    bootFs=/boot
     for grubdev in /dev/vda /dev/sda /dev/xvda /dev/nvme0n1 ; do [[ -e $grubdev ]] && break; done
   fi
 
-  # Retrieve root fs block device
-  #                   (get root mount)  (get partition or logical volume)
   rootfsdev=$(mount | grep "on / type" | awk '{print $1;}')
   rootfstype=$(df $rootfsdev --output=fstype | sed 1d)
 
-  # DigitalOcean doesn't seem to set USER while running user data
   export USER="root"
   export HOME="/root"
+  export bootFs
+  export esp
 
-  # Nix installer tries to use sudo regardless of whether we're already uid 0
-  #which sudo || { sudo() { eval "$@"; }; export -f sudo; }
-  # shellcheck disable=SC2174
   mkdir -p -m 0755 /nix
 }
 
@@ -330,7 +329,6 @@ checkEnv() {
   [[ "$(whoami)" == "root" ]] || { echo "ERROR: Must run as root"; return 1; }
 
   # Perform some easy fixups before checking
-  # TODO prevent multiple calls to apt-get update
   (which dnf && dnf install -y perl-Digest-SHA) || true # Fedora 24
   which bzcat || (which yum && yum install -y bzip2) \
               || (which apt-get && apt-get update && apt-get install -y bzip2) \
@@ -355,21 +353,16 @@ checkEnv() {
   req cut || req df    || { echo "ERROR: Missing coreutils (cut, df)"; return 1; }
   req tar              || { echo "ERROR: Missing tar";                 return 1; }
 
-  # On some versions of Oracle Linux these have the wrong permissions,
-  # which stops sshd from starting when NixOS boots
   chmod 600 /etc/ssh/ssh_host_*_key
 }
 
 infect() {
   # Add nix build users
-  # FIXME run only if necessary, rather than defaulting true
   groupadd nixbld -g 30000 || true
   for i in {1..10}; do
     useradd -c "Nix build user $i" -d /var/empty -g nixbld -G nixbld -M -N -r -s "$(which nologin)" "nixbld$i" || true
   done
-  # TODO use addgroup and adduser as fallbacks
-  #addgroup nixbld -g 30000 || true
-  #for i in {1..10}; do adduser -DH -G nixbld nixbld$i || true; done
+
   NIX_INSTALL_URL="${NIX_INSTALL_URL:-https://nixos.org/nix/install}"
   curl -L "${NIX_INSTALL_URL}" | sh -s -- --no-channel-add
 
@@ -415,15 +408,25 @@ infect() {
   echo root/.nix-defexpr/channels >> /etc/NIXOS_LUSTRATE
   (cd / && ls etc/ssh/ssh_host_*_key* || true) >> /etc/NIXOS_LUSTRATE
 
-  rm -rf $bootFs.bak
-  isEFI && umount "$esp"
-
-  mv -v $bootFs $bootFs.bak || { cp -a $bootFs $bootFs.bak ; rm -rf $bootFs/* ; umount $bootFs ; }
-  if isEFI; then
-    mkdir -p $bootFs
-    mount "$esp" $bootFs
-    find $bootFs -depth ! -path $bootFs -exec rm -rf {} +
+  # Safety check for bootFs
+  if [[ -z "$bootFs" ]]; then
+      echo "ERROR: bootFs is not defined. Aborting to prevent data loss."
+      exit 1
   fi
+
+  rm -rf "${bootFs}.bak"
+  
+  if isEFI; then
+    umount "$bootFs" || true
+    mv -v "$bootFs" "${bootFs}.bak" || { cp -a "$bootFs" "${bootFs}.bak" ; rm -rf "$bootFs"/* ; }
+    mkdir -p "$bootFs"
+    mount "$esp" "$bootFs"
+    find "$bootFs" -depth ! -path "$bootFs" -exec rm -rf {} +
+  else
+    mv -v "$bootFs" "${bootFs}.bak" || { cp -a "$bootFs" "${bootFs}.bak" ; rm -rf "$bootFs"/* ; }
+    mkdir -p "$bootFs"
+  fi
+  
   /nix/var/nix/profiles/system/bin/switch-to-configuration boot
 }
 
@@ -433,7 +436,7 @@ fi
 
 [ "$PROVIDER" = "lightsail" ] && newrootfslabel="nixos"
 if [[ "$PROVIDER" = "digitalocean" ]] || [[ "$PROVIDER" = "servarica" ]] || [[ "$PROVIDER" = "hetznercloud" ]] || [[ "$PROVIDER" = "webdock" ]] || [[ "$PROVIDER" = "layer7" ]] || [[ "$PROVIDER" = "hostinger" ]]; then
-	doNetConf=y # some providers require detailed network config to be generated
+    doNetConf=y # some providers require detailed network config to be generated
 fi
 
 checkEnv
