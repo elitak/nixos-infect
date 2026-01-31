@@ -387,6 +387,7 @@ mkdir -p /var/tmp
 curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect > nixos-infect.sh
 sed -i 's|/tmp|/var/tmp|g' nixos-infect.sh
 cat nixos-infect.sh | NIX_CHANNEL=nixos-23.05 bash -x
+```
 
 ### Servinga
 Servinga offers nixos images already, but only for systems with 4G of ram or higher.
