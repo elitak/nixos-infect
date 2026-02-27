@@ -415,11 +415,10 @@ infect() {
   echo root/.nix-defexpr/channels >> /etc/NIXOS_LUSTRATE
   (cd / && ls etc/ssh/ssh_host_*_key* || true) >> /etc/NIXOS_LUSTRATE
 
-  rm -rf $bootFs.bak
-  isEFI && umount "$esp"
-
-  mv -v $bootFs $bootFs.bak || { cp -a $bootFs $bootFs.bak ; rm -rf $bootFs/* ; umount $bootFs ; }
   if isEFI; then
+    rm -rf $bootFs.bak
+    umount "$esp"
+    mv -v $bootFs $bootFs.bak || { cp -a $bootFs $bootFs.bak ; rm -rf $bootFs/* ; umount $bootFs ; }
     mkdir -p $bootFs
     mount "$esp" $bootFs
     find $bootFs -depth ! -path $bootFs -exec rm -rf {} +
