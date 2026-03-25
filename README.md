@@ -30,6 +30,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Servinga](https://servinga.com/)
 * [Ionos](https://www.ionos.de/server/vps)
 * [Aeza](https://aeza.net/)
+* [Beget](https://beget.com)
 * [Severs.com](https://servers.com)
 
 Should you find that it works on your hoster,
@@ -457,3 +458,35 @@ Aeza works with `doNetConf=y` parameter:
 |Debian      | 13     | **success**                | 2025-01-13 |
 |Ubuntu      | 20.04  | **success**                | 2025-05-27 |
 |Ubuntu      | 22.04  | **success**                | 2025-05-27 |
+
+### Beget
+
+Beget VPS uses KVM virtualization with a non-EFI setup and does not support swap files.
+Two changes to the script are required before running:
+
+1. Add `beget` to the list of providers that generate network config and set `bootFs=/boot` for non-EFI:
+
+```bash
+sed -i 's/|| \[\[ "\$PROVIDER" = "hostinger" \]\]/|| [[ "$PROVIDER" = "hostinger" ]] || [[ "$PROVIDER" = "beget" ]]/' nixos-infect
+sed -i 's/for grubdev in \/dev\/vda \/dev\/sda \/dev\/xvda \/dev\/nvme0n1 ; do \[\[ -e \$grubdev \]\] \&\& break; done/bootFs=\/boot\n    for grubdev in \/dev\/vda \/dev\/sda \/dev\/xvda \/dev\/nvme0n1 ; do [[ -e $grubdev ]] \&\& break; done/' nixos-infect
+```
+
+2. On Ubuntu (EFI), `/boot` is mounted and cannot be moved directly. Add an `umount` before the `mv`:
+
+```bash
+sed -i 's/mv -v \$bootFs \$bootFs\.bak/umount -l $bootFs 2>\/dev\/null || true\n  mv -v $bootFs $bootFs.bak/' nixos-infect
+```
+
+2. Make sure to add your SSH public key to `/root/.ssh/authorized_keys` before running — root will have no password after install.
+
+3. Run with:
+
+```bash
+PROVIDER=beget NO_SWAP=true ./nixos-infect
+```
+
+#### Tested on
+|Distribution|       Name      | Status      | test date|
+|------------|-----------------|-------------|----------|
+|Debian      | 12              |**success**  |2026-03-02|
+|Ubuntu      | 24.04           |**success**  |2026-03-02|
