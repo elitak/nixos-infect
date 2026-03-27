@@ -4,6 +4,8 @@
 
 set -e -o pipefail
 
+: "${TMPDIR:=/tmp}"
+
 autodetectProvider() {
   if [ -e /etc/hetzner-build ]; then
     PROVIDER="hetznercloud"
@@ -230,7 +232,7 @@ checkExistingSwap() {
 }
 
 makeSwap() {
-  swapFile=$(mktemp /tmp/nixos-infect.XXXXX.swp)
+  swapFile=$(mktemp --tmpdir nixos-infect.XXXXX.swp)
   dd if=/dev/zero "of=$swapFile" bs=1M count=$((1*1024))
   chmod 0600 "$swapFile"
   mkswap "$swapFile"
@@ -239,7 +241,7 @@ makeSwap() {
 
 removeSwap() {
   swapoff -a
-  rm -vf /tmp/nixos-infect.*.swp
+  rm -vf ${TMPDIR}/nixos-infect.*.swp
 }
 
 isX86_64() {
