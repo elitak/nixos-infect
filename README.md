@@ -31,6 +31,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Ionos](https://www.ionos.de/server/vps)
 * [Aeza](https://aeza.net/)
 * [Severs.com](https://servers.com)
+* [Hostwinds](https://hostwinds.com)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
@@ -391,7 +392,7 @@ cat nixos-infect.sh | NIX_CHANNEL=nixos-23.05 bash -x
 ### Servinga
 Servinga offers nixos images already, but only for systems with 4G of ram or higher.
 
-I got nixos running on a 1G machine by starting a debian 11 instance and then using nixos-infect. 
+I got nixos running on a 1G machine by starting a debian 11 instance and then using nixos-infect.
 
 ### Layer7
 
@@ -415,7 +416,7 @@ so you need to create them as usual with `ssh-keygen` or some other means,
 add the public key to the `.ssh/authorized_keys` file on the remote host,
 and have a copy of the private key on your local box.
 
-The SSH Key can be added as 
+The SSH Key can be added as
 
 On IBM's Debian 20.04, there's no `curl` by default, so it needs to be installed first:
 ```command
@@ -457,3 +458,17 @@ Aeza works with `doNetConf=y` parameter:
 |Debian      | 13     | **success**                | 2025-01-13 |
 |Ubuntu      | 20.04  | **success**                | 2025-05-27 |
 |Ubuntu      | 22.04  | **success**                | 2025-05-27 |
+
+### Hostwinds
+To set up a Hostwinds server running a fresh Debian 12 instance, use the following:
+
+```
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-24.05 doNetConf=y bootFs=/boot bash -x
+```
+
+#### Tested on
+|Distribution| Name   | Status                     |   test date|
+|------------|--------|----------------------------|------------|
+|Debian      | 12     | **success**                | 2026-02-02 |
+
+
