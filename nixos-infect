@@ -56,6 +56,10 @@ EOF
   # Workaround for https://github.com/NixOS/nix/issues/8502
   services.logrotate.checkConfig = false;
 
+  # Systemd initrd does not have lustration (yet)
+  # https://github.com/NixOS/nixpkgs/pull/435781
+  boot.initrd.systemd.enable = false;
+
   boot.tmp.cleanOnBoot = true;
   zramSwap.enable = ${zramswap};
   networking.hostName = "$(hostname -s)";
