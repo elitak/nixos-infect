@@ -230,8 +230,21 @@ checkExistingSwap() {
 }
 
 makeSwap() {
-  swapFile=$(mktemp /tmp/nixos-infect.XXXXX.swp)
-  dd if=/dev/zero "of=$swapFile" bs=1M count=$((1*1024))
+  swapFile=$(mktemp /nixos-infect.XXXXX.swp)
+
+  # Detect filesystem type of the root partition
+  root_fstype=$(stat -f -c %T /)
+
+  if [[ "$root_fstype" == "btrfs" ]]; then
+    echo "Btrfs detected. Creating specialized swap file..."
+    touch "$swapFile"
+    chattr +C "$swapFile"
+    fallocate -l 2G "$swapFile"
+  else
+    echo "Non-btrfs ($root_fstype) detected. Using standard allocation..."
+    dd if=/dev/zero of="$swapFile" bs=1M count=2048
+  fi
+
   chmod 0600 "$swapFile"
   mkswap "$swapFile"
   swapon -v "$swapFile"
@@ -239,7 +252,7 @@ makeSwap() {
 
 removeSwap() {
   swapoff -a
-  rm -vf /tmp/nixos-infect.*.swp
+  rm -vf /nixos-infect.*.swp
 }
 
 isX86_64() {
