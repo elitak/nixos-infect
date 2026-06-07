@@ -8,6 +8,10 @@ autodetectProvider() {
   if [ -e /etc/hetzner-build ]; then
     PROVIDER="hetznercloud"
   fi
+
+  if [ -e /etc/cloud/cloud.cfg.d/99-linode.cfg ]; then
+    PROVIDER="linode"
+  fi
 }
 
 makeConf() {
@@ -277,6 +281,10 @@ prepareEnv() {
     fi
   else
     for grubdev in /dev/vda /dev/sda /dev/xvda /dev/nvme0n1 ; do [[ -e $grubdev ]] && break; done
+  fi
+
+  if PROVIDER="linode"; then    
+    grubdev="nodev"
   fi
 
   # Retrieve root fs block device

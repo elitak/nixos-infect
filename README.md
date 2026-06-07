@@ -31,6 +31,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Ionos](https://www.ionos.de/server/vps)
 * [Aeza](https://aeza.net/)
 * [Severs.com](https://servers.com)
+* [Akamai Cloud (Linode)](https://www.linode.com/)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
@@ -291,7 +292,7 @@ Tested on Cloud VPS. Contabo sets the hostname to something like `vmi######.cont
 Liga Hosting works without any issue.  You'll need to add your ssh key to the host either during
 build time or using `ssh-copy-id` before running nixos-infect
 
-```
+```bash
 #!/bin/sh
 
 curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-24.05 bash 2>&1 | tee /tmp/infect.log
@@ -322,7 +323,9 @@ Tested on vServer. The network configuration seems to be important so the same t
 ### ServArica
 Requires the same static network settings that Digital Ocean does.
 
-    curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=servarica NIX_CHANNEL=nixos-24.05 bash
+```bash
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=servarica NIX_CHANNEL=nixos-24.05 bash
+```
 
 #### Tested on
 |Distribution|       Name      | Status    | test date|
@@ -342,7 +345,8 @@ I could not get it to run via UserData scripts, but downloading and executing th
 As of November 2020, it is easy to get a NixOS VM running on Scaleway by using nixos-infect and Scaleway's support for cloud init.
 All that is needed is to follow the nixos-infect recipe for Digital Ocean, removing the Digital Ocean-specific stuff.
 So, pragmatically, start an Ubuntu or Fedora VM and use something like the following as your cloud-init startup script:
-```cloud-init
+
+```yaml
 #cloud-config
 write_files:
 - path: /etc/nixos/host.nix
@@ -368,8 +372,8 @@ add the public key to the `.ssh/authorized_keys` file on the remote host,
 and have a copy of the private key on your local box.
 
 On RackNerd's Ubuntu 20.04, there's no `curl` by default, so `wget -O-` needs to be used instead:
-```command
-# wget -O- https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-24.05 bash -x
+```bash
+wget -O- https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-24.05 bash -x
 ```
 
 #### Tested on
@@ -382,11 +386,12 @@ On RackNerd's Ubuntu 20.04, there's no `curl` by default, so `wget -O-` needs to
 For machine with 2go of ram, dd fail since `/tmp` is mount on the ram, wich is too little for it.
 Instead i replace `/tmp` on the code by `/var/tmp`
 
-```command
+```bash
 mkdir -p /var/tmp
 curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect > nixos-infect.sh
 sed -i 's|/tmp|/var/tmp|g' nixos-infect.sh
 cat nixos-infect.sh | NIX_CHANNEL=nixos-23.05 bash -x
+```
 
 ### Servinga
 Servinga offers nixos images already, but only for systems with 4G of ram or higher.
@@ -395,10 +400,12 @@ I got nixos running on a 1G machine by starting a debian 11 instance and then us
 
 ### Layer7
 
-```command
-# wget -O- https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=layer7 NIX_CHANNEL=nixos-23.05 bash -x
+```bash
+wget -O- https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=layer7 NIX_CHANNEL=nixos-23.05 bash -x
+``` 
 
 ### Self-hosted
+
 Self-hosted infrastructure
 
 #### Tested on
@@ -407,9 +414,11 @@ Self-hosted infrastructure
 |Proxmox     | 8.3.1           |**success**|2025-04-16|
 
 #### Potential tweaks:
+
 Will have to clean up the disk manually afterwards. You may want to remove VM disks and do some cleanup in the Proxmox GUI _before_ initiating the infect if you aren't comfortable cleaning up after.
 
 ### IBM Cloud VPC
+
 Remember that the SSH keys are not automatically generated/uploaded,
 so you need to create them as usual with `ssh-keygen` or some other means,
 add the public key to the `.ssh/authorized_keys` file on the remote host,
@@ -418,9 +427,11 @@ and have a copy of the private key on your local box.
 The SSH Key can be added as 
 
 On IBM's Debian 20.04, there's no `curl` by default, so it needs to be installed first:
-```command
+
+```bash
 apt update
 apt install curl
+```
 
 ### Webdock
 Remember that you can not add SSH keys to the root user trough the web interface,
@@ -429,14 +440,18 @@ manually add a public key to `/root/.ssh/authorized_keys`.
 Make sure to set `PROVIDER=webdock`
 
 #### Tested on
+
 |Distribution| Name   | Status    | test date|
 |------------|--------|-----------|----------|
 |Ubuntu      | 20.04  | success   |2024-10-26|
 |Ubuntu      | 22.04  | success   |2024-10-26|
+
 ### Ionos
+
 Just set an SSH-Key and run the Script.
 
 #### Tested on
+
 |Distribution|       Name      | Status        | test date|
 |------------|-----------------|---------------|----------|
 |Ubuntu      | 22.04           | **success**   |2024-05-15|
@@ -444,8 +459,8 @@ Just set an SSH-Key and run the Script.
 ### Aeza
 Aeza works with `doNetConf=y` parameter:
 
-```command
-# curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-23.05 doNetConf=y bash -x
+```bash
+curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-23.05 doNetConf=y bash -x
 ```
 
 #### Tested on
@@ -457,3 +472,43 @@ Aeza works with `doNetConf=y` parameter:
 |Debian      | 13     | **success**                | 2025-01-13 |
 |Ubuntu      | 20.04  | **success**                | 2025-05-27 |
 |Ubuntu      | 22.04  | **success**                | 2025-05-27 |
+
+### Akamai Cloud (Linode)
+
+Linode's lish console needs specific kernel and bootloader configuration in order to function correctly.
+Use the following example cloud-init config as your User Data to auto install NixOS
+
+#### User Data example
+
+```Yaml
+#cloud-config
+hostname: nixos
+package_update: true
+package_upgrade: false
+packages:
+  - ca-certificates
+  - curl
+write_files:
+- path: /etc/nixos/host.nix
+  permissions: '0644'
+  content: |
+    { modulesPath, ... }:
+    {
+      boot.kernelParams = [ "console=ttyS0,19200n8" ];
+      boot.loader.grub.extraConfig = ''
+        serial --speed=19200 --unit=0 --word=8 --parity=no --stop=1;
+        terminal_input serial;
+        terminal_output serial
+      '';
+    }  
+runcmd:
+  - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | NIX_CHANNEL=nixos-25.11 NIXOS_IMPORT=./host.nix bash -x 2>&1 | tee /infect.log
+```
+
+#### Tested on
+|Distribution| Name   | Status       |   test date|
+|------------|--------|--------------|------------|
+|Debian      | 13     | **success**  | 2026-06-07 |
+|Debian      | 12     | **success**  | 2026-06-07 |
+|Ubuntu      | 24.04  | **success**  | 2026-06-07 |
+|Ubuntu      | 22.04  | **success**  | 2026-06-07 |
