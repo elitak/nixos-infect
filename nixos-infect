@@ -186,7 +186,10 @@ EOF
   # details gathered from the active system.
   networking = {
     nameservers = [ ${nameservers[@]} ];
-    defaultGateway = "${gateway}";
+    defaultGateway = {
+      address = "${gateway}";
+      interface = "${eth0_name}";
+    };
     defaultGateway6 = {
       address = "${gateway6}";
       interface = "${eth0_name}";
