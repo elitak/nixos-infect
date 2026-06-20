@@ -31,6 +31,7 @@ This script has successfully been tested on at least the follow hosting provider
 * [Ionos](https://www.ionos.de/server/vps)
 * [Aeza](https://aeza.net/)
 * [Severs.com](https://servers.com)
+* [Bluehost.com](https://www.bluehost.com/)
 
 Should you find that it works on your hoster,
 feel free to update this README and issue a pull request.
@@ -133,6 +134,7 @@ runcmd:
 |Ubuntu      |22.10 x64        | _failure_ |2023-06-05|
 |Ubuntu      |23.10 x64        | _failure_ |2024-03-18|
 |Ubuntu      |24.04 x64        |**success**|2024-07-03|
+|Rocky Linux |10    x64        |**success**|2026-06-19|
 
 ### Vultr
 To set up a NixOS Vultr server, instantiate an Ubuntu box with the following "Cloud-Init User-Data":
